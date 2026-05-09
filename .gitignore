@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables (never commit secrets)
+.env
+.env.*
+.env.local
+.env.production
+
+# Vercel
+.vercel/
+
+# Claude Code local settings (machine-specific)
+.claude/
+
+# Editor folders
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
