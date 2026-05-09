@@ -69,7 +69,8 @@ export default function ThemeStyles() {
         z-index: 0;
       }
 
-      .srs-content { position: relative; z-index: 1; }
+      .srs-content { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+      .srs-main { flex: 1; }
 
       .display { font-family: 'Fraunces', Georgia, serif; font-weight: 600; letter-spacing: -0.02em; }
       .mono { font-family: 'DM Mono', ui-monospace, monospace; }
@@ -408,34 +409,105 @@ export default function ThemeStyles() {
         text-transform: uppercase;
       }
 
-      .feedback-link {
-        position: fixed;
-        bottom: 18px;
-        right: 18px;
-        font-family: 'DM Mono', ui-monospace, monospace;
-        font-size: 14px;
-        color: var(--terracotta);
-        text-decoration: none;
-        z-index: 50;
-        transition: color 0.18s ease;
+      .page-footer {
+        border-top: 1px solid var(--rule);
+        padding: 28px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 680px;
+        margin: 0 auto;
+        width: 100%;
+        box-sizing: border-box;
       }
-      .feedback-link:hover { color: var(--ink); }
-
-      .guide-link {
-        position: fixed;
-        bottom: 18px;
-        left: 18px;
+      .page-footer-btn {
         font-family: 'DM Mono', ui-monospace, monospace;
         font-size: 14px;
         color: var(--terracotta);
         background: none;
         border: none;
         cursor: pointer;
-        z-index: 50;
         padding: 0;
         transition: color 0.18s ease;
       }
-      .guide-link:hover { color: var(--ink); }
+      .page-footer-btn:hover { color: var(--ink); }
+
+      .feedback-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .feedback-modal {
+        background: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        box-shadow: 0 8px 40px -8px rgba(42, 31, 21, 0.35), 0 2px 8px -4px rgba(42, 31, 21, 0.15);
+        padding: 36px 40px;
+        max-width: 420px;
+        width: 100%;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .feedback-modal-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--ink-soft);
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 18px;
+        padding: 4px 8px;
+        line-height: 1;
+        transition: color 0.18s ease;
+      }
+      .feedback-modal-close:hover { color: var(--ink); }
+      .feedback-modal-heading {
+        font-family: 'Fraunces', Georgia, serif;
+        font-weight: 500;
+        font-size: 26px;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+        margin-bottom: 12px;
+        line-height: 1.2;
+      }
+      .feedback-modal-body {
+        font-size: 16px;
+        line-height: 1.65;
+        color: var(--ink-soft);
+        margin-bottom: 28px;
+        font-style: italic;
+      }
+      .feedback-modal-email-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .feedback-modal-email {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 15px;
+        color: var(--ink);
+      }
+      .feedback-modal-copy-btn {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 13px;
+        color: var(--paper-2);
+        background: var(--terracotta);
+        border: none;
+        border-radius: 3px;
+        padding: 6px 12px;
+        cursor: pointer;
+        transition: background 0.18s ease;
+      }
+      .feedback-modal-copy-btn:hover { background: var(--ink); }
 
       /* Guide page */
       .guide-view {

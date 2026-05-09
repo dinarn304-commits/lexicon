@@ -5,6 +5,8 @@ import { removeCardImage } from './storage/images';
 import { createSampleData } from './utils/card';
 import ThemeStyles from './components/ThemeStyles';
 import Loader from './components/Loader';
+import PageFooter from './components/PageFooter';
+import FeedbackModal from './components/FeedbackModal';
 import HomeView from './views/HomeView';
 import DeckView from './views/DeckView';
 import ReviewView from './views/ReviewView';
@@ -23,6 +25,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [reviewQueue, setReviewQueue] = useState([]);
   const [sessionStats, setSessionStats] = useState({ total: 0, again: 0, hard: 0, good: 0, easy: 0 });
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -133,14 +136,6 @@ export default function App() {
     backHome();
   }
 
-  const feedbackRef = useRef(null);
-  useEffect(() => {
-    if (feedbackRef.current) {
-      const addr = 'dinarn304' + '@' + 'gmail.com';
-      feedbackRef.current.href = 'mailto:' + addr + '?subject=Lexicon%20%E2%80%94%20feedback';
-    }
-  }, []);
-
   const vocabBtnRef = useRef(null);
   const speakBtnRef = useRef(null);
   const highlightRef = useRef(null);
@@ -179,6 +174,7 @@ export default function App() {
     <div className="srs-root">
       <ThemeStyles />
       <div className="srs-content">
+        <div className="srs-main">
         {/* Mode switcher */}
         <div className="mode-switcher-band">
           <span className="mode-hairline-l" />
@@ -252,9 +248,12 @@ export default function App() {
         )}
         </>
         )}
+        </div>
+        {view !== 'guide' && (
+          <PageFooter onGuideClick={openGuide} onFeedbackClick={() => setFeedbackOpen(true)} />
+        )}
       </div>
-      <button className="guide-link" onClick={openGuide}>«Guide»</button>
-      <a ref={feedbackRef} className="feedback-link" href="#">«Feedback»</a>
+      {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
     </div>
   );
 }
