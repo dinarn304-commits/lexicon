@@ -13,6 +13,7 @@ import ReviewView from './views/ReviewView';
 import DeckForm from './views/DeckForm';
 import CardForm from './views/CardForm';
 import SpeakingView from './views/SpeakingView';
+import ReadingView from './views/ReadingView';
 import GuideView from './views/GuideView';
 
 export default function App() {
@@ -138,10 +139,14 @@ export default function App() {
 
   const vocabBtnRef = useRef(null);
   const speakBtnRef = useRef(null);
+  const readBtnRef = useRef(null);
   const highlightRef = useRef(null);
 
   useLayoutEffect(() => {
-    const btn = mode === 'vocabulary' ? vocabBtnRef.current : speakBtnRef.current;
+    const btn =
+      mode === 'vocabulary' ? vocabBtnRef.current :
+      mode === 'speaking'   ? speakBtnRef.current :
+                              readBtnRef.current;
     const highlight = highlightRef.current;
     if (!btn || !highlight) return;
     highlight.style.left = btn.offsetLeft + 'px';
@@ -197,13 +202,22 @@ export default function App() {
             >
               speaking
             </button>
+            <span className="mode-dot" aria-hidden="true">·</span>
+            <button
+              ref={readBtnRef}
+              className="mode-opt"
+              style={{ color: mode === 'reading' ? 'var(--ink)' : undefined }}
+              onClick={() => switchMode('reading')}
+            >
+              reading
+            </button>
           </div>
           <span className="mode-hairline-r" />
         </div>
 
         {view === 'guide' ? (
         <GuideView onBack={closeGuide} />
-      ) : mode === 'speaking' ? <SpeakingView /> : (
+      ) : mode === 'reading' ? <ReadingView /> : mode === 'speaking' ? <SpeakingView /> : (
         <>
         {view === 'home' && (
           <HomeView data={data} onOpenDeck={openDeck} onNewDeck={() => setView('addDeck')} onReorderDecks={reorderDecks} onOpenGuide={openGuide} />
