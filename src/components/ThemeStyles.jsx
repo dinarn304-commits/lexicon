@@ -554,6 +554,45 @@ export default function ThemeStyles() {
       .import-text-area:focus { border-color: var(--terracotta); }
       .import-text-area::placeholder { color: var(--ink-faint); font-style: italic; }
 
+      .tiptap-import-editor {
+        font-family: 'Fraunces', serif;
+        background: var(--paper-2);
+        border: 1px solid var(--rule);
+        color: var(--ink);
+        border-radius: 3px;
+        transition: border-color 0.18s ease;
+        width: 100%;
+        min-height: 12rem;
+        line-height: 1.7;
+        box-sizing: border-box;
+        cursor: text;
+      }
+      .tiptap-import-editor:focus-within { border-color: var(--terracotta); }
+      .tiptap-import-editor .ProseMirror {
+        padding: 10px 12px;
+        min-height: 12rem;
+        outline: none;
+        box-sizing: border-box;
+      }
+      .tiptap-import-editor .ProseMirror p {
+        margin: 0;
+        line-height: 1.7;
+      }
+      .tiptap-import-editor .ProseMirror > * + * { margin-top: 0.4em; }
+      .tiptap-import-editor .ProseMirror p.is-editor-empty::before {
+        content: attr(data-placeholder);
+        color: var(--ink-faint);
+        font-style: italic;
+        float: left;
+        height: 0;
+        pointer-events: none;
+      }
+      .tiptap-import-editor [data-node-view-wrapper] { margin: 6px 0; }
+      .tiptap-import-editor [data-node-view-wrapper] img {
+        max-width: 100%;
+        filter: sepia(0.08) saturate(0.95);
+      }
+
       /* Guide page */
       .guide-view {
         min-height: 100vh;

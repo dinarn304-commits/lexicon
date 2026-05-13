@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { isDue, applyRating, migrateCard } from './algorithm/scheduler';
 import { loadAppData, saveAppData } from './storage/storage';
 import { removeCardImage } from './storage/images';
+import { checkStorageHealth, requestPersistentStorage } from './storage/persistence';
 import { createSampleData } from './utils/card';
 import ThemeStyles from './components/ThemeStyles';
 import Loader from './components/Loader';
@@ -30,6 +31,8 @@ export default function App() {
 
   useEffect(() => {
     (async () => {
+      checkStorageHealth();
+      requestPersistentStorage();
       const saved = await loadAppData();
       if (saved) {
         saved.cards = (saved.cards || []).map(migrateCard);
