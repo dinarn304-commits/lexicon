@@ -509,6 +509,51 @@ export default function ThemeStyles() {
       }
       .feedback-modal-copy-btn:hover { background: var(--ink); }
 
+      .import-text-modal {
+        background: var(--paper);
+        border: 1px solid var(--rule);
+        border-radius: 6px;
+        box-shadow: 0 8px 40px -8px rgba(42, 31, 21, 0.35), 0 2px 8px -4px rgba(42, 31, 21, 0.15);
+        padding: 36px 40px 0;
+        max-width: 560px;
+        width: 100%;
+        position: relative;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        max-height: min(640px, 90vh);
+        overflow: hidden;
+      }
+      .import-text-modal-body {
+        flex: 1;
+        overflow-y: auto;
+        padding-bottom: 24px;
+      }
+      .import-text-modal-footer {
+        flex-shrink: 0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding-bottom: 36px;
+      }
+      .import-text-area {
+        font-family: 'Fraunces', serif;
+        background: var(--paper-2);
+        border: 1px solid var(--rule);
+        color: var(--ink);
+        border-radius: 3px;
+        padding: 10px 12px;
+        outline: none;
+        transition: border-color 0.18s ease;
+        width: 100%;
+        min-height: 12rem;
+        resize: vertical;
+        line-height: 1.7;
+        box-sizing: border-box;
+      }
+      .import-text-area:focus { border-color: var(--terracotta); }
+      .import-text-area::placeholder { color: var(--ink-faint); font-style: italic; }
+
       /* Guide page */
       .guide-view {
         min-height: 100vh;

@@ -63,6 +63,7 @@ export function createSampleData() {
         createdAt: new Date().toISOString(),
       },
     ],
+    texts: [],
     cards: [
       makeWelcomeCard(welcomeId, 'How do I start learning?', 'Click any deck to open it. Then press "Review N cards" or hit Enter to begin a review session.'),
       makeWelcomeCard(welcomeId, 'How do I add new words?', 'Inside any deck, click "Add card" or press N. Fill in the front and back, then save.'),

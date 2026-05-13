@@ -33,6 +33,7 @@ export default function App() {
       const saved = await loadAppData();
       if (saved) {
         saved.cards = (saved.cards || []).map(migrateCard);
+        saved.texts = saved.texts || [];
         setData(saved);
       } else {
         const initial = createSampleData();
@@ -90,6 +91,10 @@ export default function App() {
   }
 
   function endSession() { setView('deck'); }
+
+  function saveText(text) {
+    persist({ ...data, texts: [...(data.texts || []), text] });
+  }
 
   function reorderDecks(newDecks) {
     persist({ ...data, decks: newDecks });
@@ -217,7 +222,7 @@ export default function App() {
 
         {view === 'guide' ? (
         <GuideView onBack={closeGuide} />
-      ) : mode === 'reading' ? <ReadingView /> : mode === 'speaking' ? <SpeakingView /> : (
+      ) : mode === 'reading' ? <ReadingView data={data} onSaveText={saveText} /> : mode === 'speaking' ? <SpeakingView /> : (
         <>
         {view === 'home' && (
           <HomeView data={data} onOpenDeck={openDeck} onNewDeck={() => setView('addDeck')} onReorderDecks={reorderDecks} onOpenGuide={openGuide} />
