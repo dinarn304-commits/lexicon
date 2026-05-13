@@ -818,11 +818,56 @@ export default function ThemeStyles() {
       .reading-pane-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         margin-bottom: 56px;
       }
+      .reading-pane-header-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      .reading-controls-row {
+        display: flex;
+        gap: 10px;
+      }
+      .reading-control {
+        display: inline-flex;
+        align-items: center;
+        background: var(--paper);
+        border: 1px solid var(--terracotta-soft);
+        border-radius: 5px;
+      }
+      .reading-control-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 4px 9px;
+        font-size: 14px;
+        line-height: 1;
+        color: var(--ink-soft);
+        transition: color 0.12s, background 0.12s;
+      }
+      .reading-control-btn:not(:disabled):hover {
+        color: var(--ink);
+        background: var(--terracotta-soft);
+      }
+      .reading-control-btn:disabled {
+        opacity: 0.28;
+        cursor: default;
+      }
+      .reading-control-value {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        color: var(--ink);
+        padding: 4px 6px;
+        user-select: none;
+        white-space: nowrap;
+        min-width: 3.5em;
+        text-align: center;
+      }
       .reading-pane-body {
-        max-width: 540px;
         margin: 0 auto;
       }
       .reading-pane-title {
@@ -836,8 +881,8 @@ export default function ThemeStyles() {
       }
       .reading-para {
         font-family: 'Fraunces', serif;
-        font-size: 17px;
-        line-height: 1.75;
+        font-size: var(--reading-font-size, 17px);
+        line-height: var(--reading-line-height, 1.75);
         color: var(--ink);
         margin: 0 0 1em;
       }
@@ -853,8 +898,8 @@ export default function ThemeStyles() {
       }
       .reading-list {
         font-family: 'Fraunces', serif;
-        font-size: 17px;
-        line-height: 1.75;
+        font-size: var(--reading-font-size, 17px);
+        line-height: var(--reading-line-height, 1.75);
         color: var(--ink);
         margin: 0 0 1em;
         padding-left: 1.5em;

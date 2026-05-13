@@ -3,6 +3,11 @@ import { Plus } from 'lucide-react';
 import WordCounter from '../components/WordCounter';
 import ImportTextModal from '../components/ImportTextModal';
 import TextCard from '../components/TextCard';
+import ReadingControl from '../components/ReadingControl';
+
+const MARGIN_OPTIONS = ['narrow', 'normal', 'wide'];
+const MARGIN_WIDTHS  = { narrow: '28rem', normal: '36rem', wide: '48rem' };
+const SPACING_OPTIONS = [1.1, 1.3, 1.5, 1.7, 1.9];
 
 // ── TipTap JSON rendering helpers ─────────────────────────────────────────────
 
@@ -42,7 +47,19 @@ function countBlockWords(node) {
 
 // ── Individual reading pane ───────────────────────────────────────────────────
 
-function ReadingPane({ text, data, onBack, onUpdateReadingProgress }) {
+function ReadingPane({ text, data, onBack, onUpdateReadingProgress, readingPreferences, onUpdateReadingPreferences }) {
+  const prefs = readingPreferences || { textSize: 18, marginWidth: 'normal', lineSpacing: 1.5 };
+
+  const marginIdx  = MARGIN_OPTIONS.indexOf(prefs.marginWidth);
+  const spacingIdx = SPACING_OPTIONS.indexOf(prefs.lineSpacing);
+
+  function decTextSize()  { onUpdateReadingPreferences({ ...prefs, textSize: prefs.textSize - 1 }); }
+  function incTextSize()  { onUpdateReadingPreferences({ ...prefs, textSize: prefs.textSize + 1 }); }
+  function decMargin()    { onUpdateReadingPreferences({ ...prefs, marginWidth: MARGIN_OPTIONS[marginIdx - 1] }); }
+  function incMargin()    { onUpdateReadingPreferences({ ...prefs, marginWidth: MARGIN_OPTIONS[marginIdx + 1] }); }
+  function decSpacing()   { onUpdateReadingPreferences({ ...prefs, lineSpacing: SPACING_OPTIONS[spacingIdx - 1] }); }
+  function incSpacing()   { onUpdateReadingPreferences({ ...prefs, lineSpacing: SPACING_OPTIONS[spacingIdx + 1] }); }
+
   const paragraphRefs = useRef([]);
 
   const blocks = useMemo(
@@ -201,11 +218,39 @@ function ReadingPane({ text, data, onBack, onUpdateReadingProgress }) {
     <div className="reading-pane fade-up">
       <div className="reading-pane-header">
         <button className="guide-back-btn" onClick={onBack}>← Back to library</button>
-        <WordCounter today={data.wordsReadToday || 0} total={data.wordsReadTotal || 0} />
+        <div className="reading-pane-header-right">
+          <div className="reading-controls-row">
+            <ReadingControl
+              value={`${prefs.textSize}px`}
+              onDecrement={decTextSize}
+              onIncrement={incTextSize}
+              atMin={prefs.textSize <= 15}
+              atMax={prefs.textSize >= 22}
+            />
+            <ReadingControl
+              value={prefs.marginWidth}
+              onDecrement={decMargin}
+              onIncrement={incMargin}
+              atMin={marginIdx <= 0}
+              atMax={marginIdx >= MARGIN_OPTIONS.length - 1}
+            />
+            <ReadingControl
+              value={prefs.lineSpacing}
+              onDecrement={decSpacing}
+              onIncrement={incSpacing}
+              atMin={spacingIdx <= 0}
+              atMax={spacingIdx >= SPACING_OPTIONS.length - 1}
+            />
+          </div>
+          <WordCounter today={data.wordsReadToday || 0} total={data.wordsReadTotal || 0} />
+        </div>
       </div>
-      <div className="reading-pane-body">
+      <div className="reading-pane-body" style={{ maxWidth: MARGIN_WIDTHS[prefs.marginWidth] }}>
         <h1 className="reading-pane-title">{text.title}</h1>
-        <div className="reading-pane-text">
+        <div
+          className="reading-pane-text"
+          style={{ '--reading-font-size': `${prefs.textSize}px`, '--reading-line-height': prefs.lineSpacing }}
+        >
           {blocks.map((block, i) => renderBlock(block, i))}
         </div>
       </div>
@@ -215,7 +260,7 @@ function ReadingPane({ text, data, onBack, onUpdateReadingProgress }) {
 
 // ── Library view ──────────────────────────────────────────────────────────────
 
-export default function ReadingView({ data, onSaveText, onDeleteText, onUpdateReadingProgress }) {
+export default function ReadingView({ data, onSaveText, onDeleteText, onUpdateReadingProgress, onUpdateReadingPreferences }) {
   const [importOpen, setImportOpen] = useState(false);
   const [selectedTextId, setSelectedTextId] = useState(null);
 
@@ -234,6 +279,8 @@ export default function ReadingView({ data, onSaveText, onDeleteText, onUpdateRe
         data={data}
         onBack={() => setSelectedTextId(null)}
         onUpdateReadingProgress={onUpdateReadingProgress}
+        readingPreferences={data.readingPreferences}
+        onUpdateReadingPreferences={onUpdateReadingPreferences}
       />
     );
   }

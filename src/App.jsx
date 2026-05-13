@@ -45,6 +45,9 @@ export default function App() {
           saved.wordsReadToday = 0;
           saved.lastReadDate   = today;
         }
+        if (!saved.readingPreferences) {
+          saved.readingPreferences = { textSize: 18, marginWidth: 'normal', lineSpacing: 1.5 };
+        }
         setData(saved);
       } else {
         const initial = createSampleData();
@@ -118,6 +121,10 @@ export default function App() {
     }
     walkDoc(text.content);
     persist({ ...data, texts: data.texts.filter((t) => t.id !== textId) });
+  }
+
+  function updateReadingPreferences(prefs) {
+    persist({ ...data, readingPreferences: prefs });
   }
 
   function updateReadingProgress(textId, newWordsRead) {
@@ -264,7 +271,7 @@ export default function App() {
 
         {view === 'guide' ? (
         <GuideView onBack={closeGuide} />
-      ) : mode === 'reading' ? <ReadingView data={data} onSaveText={saveText} onDeleteText={deleteText} onUpdateReadingProgress={updateReadingProgress} /> : mode === 'speaking' ? <SpeakingView /> : (
+      ) : mode === 'reading' ? <ReadingView data={data} onSaveText={saveText} onDeleteText={deleteText} onUpdateReadingProgress={updateReadingProgress} onUpdateReadingPreferences={updateReadingPreferences} /> : mode === 'speaking' ? <SpeakingView /> : (
         <>
         {view === 'home' && (
           <HomeView data={data} onOpenDeck={openDeck} onNewDeck={() => setView('addDeck')} onReorderDecks={reorderDecks} onOpenGuide={openGuide} />
