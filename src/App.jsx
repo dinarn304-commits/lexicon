@@ -37,6 +37,14 @@ export default function App() {
       if (saved) {
         saved.cards = (saved.cards || []).map(migrateCard);
         saved.texts = saved.texts || [];
+        const today = new Date().toISOString().slice(0, 10);
+        saved.wordsReadToday = saved.wordsReadToday ?? 0;
+        saved.wordsReadTotal = saved.wordsReadTotal ?? 0;
+        saved.lastReadDate   = saved.lastReadDate   ?? today;
+        if (saved.lastReadDate !== today) {
+          saved.wordsReadToday = 0;
+          saved.lastReadDate   = today;
+        }
         setData(saved);
       } else {
         const initial = createSampleData();
@@ -97,6 +105,37 @@ export default function App() {
 
   function saveText(text) {
     persist({ ...data, texts: [...(data.texts || []), text] });
+  }
+
+  function deleteText(textId) {
+    const text = data.texts.find((t) => t.id === textId);
+    if (!text) return;
+    function walkDoc(node) {
+      if (node.type === 'image' && node.attrs?.src?.startsWith('text-image://')) {
+        localStorage.removeItem(`srs-text-image-${node.attrs.src.slice('text-image://'.length)}`);
+      }
+      if (node.content) node.content.forEach(walkDoc);
+    }
+    walkDoc(text.content);
+    persist({ ...data, texts: data.texts.filter((t) => t.id !== textId) });
+  }
+
+  function updateReadingProgress(textId, newWordsRead) {
+    setData((prev) => {
+      const text = prev.texts.find((t) => t.id === textId);
+      if (!text) return prev;
+      const delta = Math.max(0, newWordsRead - text.wordsReadInThisText);
+      const next = {
+        ...prev,
+        texts: prev.texts.map((t) =>
+          t.id === textId ? { ...t, wordsReadInThisText: newWordsRead } : t
+        ),
+        wordsReadToday: (prev.wordsReadToday || 0) + delta,
+        wordsReadTotal: (prev.wordsReadTotal || 0) + delta,
+      };
+      saveAppData(next);
+      return next;
+    });
   }
 
   function reorderDecks(newDecks) {
@@ -225,7 +264,7 @@ export default function App() {
 
         {view === 'guide' ? (
         <GuideView onBack={closeGuide} />
-      ) : mode === 'reading' ? <ReadingView data={data} onSaveText={saveText} /> : mode === 'speaking' ? <SpeakingView /> : (
+      ) : mode === 'reading' ? <ReadingView data={data} onSaveText={saveText} onDeleteText={deleteText} onUpdateReadingProgress={updateReadingProgress} /> : mode === 'speaking' ? <SpeakingView /> : (
         <>
         {view === 'home' && (
           <HomeView data={data} onOpenDeck={openDeck} onNewDeck={() => setView('addDeck')} onReorderDecks={reorderDecks} onOpenGuide={openGuide} />

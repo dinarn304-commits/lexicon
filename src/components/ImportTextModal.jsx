@@ -53,7 +53,7 @@ export default function ImportTextModal({ onClose, onSave }) {
     extensions: [
       StarterKit,
       ImageWithResolver,
-      Placeholder.configure({ placeholder: 'Paste your text here.' }),
+      Placeholder.configure({ placeholder: 'Paste your text here.', showOnlyCurrent: false }),
     ],
     onUpdate({ editor }) {
       setHasContent(!editor.isEmpty);
