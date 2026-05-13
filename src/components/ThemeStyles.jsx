@@ -527,7 +527,6 @@ export default function ThemeStyles() {
       .import-text-modal-body {
         flex: 1;
         min-height: 0;
-        overflow-y: auto;
         padding-bottom: 24px;
       }
       .import-text-modal-footer {
@@ -563,7 +562,9 @@ export default function ThemeStyles() {
         border-radius: 3px;
         transition: border-color 0.18s ease;
         width: 100%;
-        min-height: 12rem;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
         line-height: 1.7;
         box-sizing: border-box;
         cursor: text;
