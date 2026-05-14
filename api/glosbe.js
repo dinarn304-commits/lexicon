@@ -55,43 +55,27 @@ export default async function handler(req, res) {
 
 function parseTranslations(root) {
   try {
+    // Primary: h3.translation__item__pharse — current Glosbe layout (class typo is Glosbe's own)
+    const primary = root.querySelectorAll('h3.translation__item__pharse');
+    const fromPrimary = primary
+      .slice(0, 5)
+      .map(el => el.text.trim())
+      .filter(t => t.length > 0);
+    if (fromPrimary.length > 0) return fromPrimary;
+
     const results = [];
 
-    // Strategy 1: .translation__item strong.translation  (primary Glosbe structure)
-    const s1 = root.querySelectorAll('.translation__item strong.translation');
+    // Fallback 1: any strong.translation
+    const s1 = root.querySelectorAll('strong.translation');
     for (const el of s1) {
       const text = el.text?.trim();
       if (text && !results.includes(text)) results.push(text);
     }
     if (results.length > 0) return results;
 
-    // Strategy 2: any strong.translation
-    const s2 = root.querySelectorAll('strong.translation');
+    // Fallback 2: [data-testid*="translation"]
+    const s2 = root.querySelectorAll('[data-testid*="translation"]');
     for (const el of s2) {
-      const text = el.text?.trim();
-      if (text && !results.includes(text)) results.push(text);
-    }
-    if (results.length > 0) return results;
-
-    // Strategy 3: .phraseMeaning .phrase  (older Glosbe layout)
-    const s3 = root.querySelectorAll('.phraseMeaning .phrase');
-    for (const el of s3) {
-      const text = el.text?.trim();
-      if (text && !results.includes(text)) results.push(text);
-    }
-    if (results.length > 0) return results;
-
-    // Strategy 4: .meaningRow .phrase
-    const s4 = root.querySelectorAll('.meaningRow .phrase');
-    for (const el of s4) {
-      const text = el.text?.trim();
-      if (text && !results.includes(text)) results.push(text);
-    }
-    if (results.length > 0) return results;
-
-    // Strategy 5: data-testid="translation-item" or [data-testid] containing "translation"
-    const s5 = root.querySelectorAll('[data-testid*="translation"]');
-    for (const el of s5) {
       const text = el.text?.trim();
       if (text && text.length < 60 && !results.includes(text)) results.push(text);
     }
