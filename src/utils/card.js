@@ -48,6 +48,8 @@ export function createSampleData() {
   const frenchId = makeId();
   return {
     cardsAddedByUser: 0,
+    translationLanguage: 'en',
+    discoveredWordsDeckInitialized: true,
     decks: [
       {
         id: welcomeId,
@@ -60,6 +62,13 @@ export function createSampleData() {
         name: 'French Essentials',
         description: 'A small sample deck — feel free to delete and replace with your own.',
         language: 'French',
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'deck-discovered-words',
+        name: 'okuma sırasında keşfedilen kelimeler',
+        description: '',
+        language: 'Turkish',
         createdAt: new Date().toISOString(),
       },
     ],

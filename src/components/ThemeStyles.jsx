@@ -934,6 +934,188 @@ export default function ThemeStyles() {
         margin: 1em 0;
         filter: sepia(0.08) saturate(0.95);
       }
+
+      /* ─── Word spans (click-to-translate) ──────────────────────── */
+      .reading-word {
+        cursor: pointer;
+        border-radius: 2px;
+        transition: background-color 0.12s ease;
+      }
+      .reading-word:hover {
+        background-color: rgba(164, 71, 38, 0.12);
+      }
+
+      /* ─── Translation panel ─────────────────────────────────────── */
+      .translation-panel {
+        position: fixed;
+        top: 6rem;
+        right: 2rem;
+        width: 22rem;
+        background: var(--paper);
+        border: 1px solid var(--terracotta-soft);
+        border-radius: 6px;
+        box-shadow: 0 2px 12px rgba(42, 31, 21, 0.10), 0 1px 3px rgba(42, 31, 21, 0.08);
+        padding: 1.25rem 1.25rem 1.1rem;
+        z-index: 100;
+      }
+      .translation-panel-close {
+        position: absolute;
+        top: 0.7rem;
+        right: 0.7rem;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--ink-faint);
+        font-size: 1.15rem;
+        line-height: 1;
+        padding: 2px 5px;
+        border-radius: 3px;
+        transition: color 0.12s, background 0.12s;
+      }
+      .translation-panel-close:hover {
+        color: var(--ink);
+        background: var(--terracotta-soft);
+      }
+      .translation-panel-word {
+        font-family: 'Fraunces', serif;
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: var(--ink);
+        margin: 0 0 0.5rem;
+        padding-right: 1.6rem;
+        line-height: 1.3;
+      }
+      .translation-lang-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        margin-bottom: 0.85rem;
+      }
+      .translation-lang-btn {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 11px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 2px;
+        color: var(--ink-faint);
+        transition: color 0.12s;
+        line-height: 1;
+        letter-spacing: 0.03em;
+      }
+      .translation-lang-btn.active {
+        color: var(--terracotta);
+        font-weight: 600;
+      }
+      .translation-lang-btn:not(.active):hover { color: var(--ink-soft); }
+      .translation-lang-divider {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 11px;
+        color: var(--rule);
+        line-height: 1;
+      }
+      .translation-loading {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 12px;
+        color: var(--ink-faint);
+        padding: 0.4rem 0 0.6rem;
+        margin: 0;
+      }
+      .translation-list {
+        list-style: none;
+        margin: 0 0 0.4rem;
+        padding: 0;
+      }
+      .translation-item {
+        font-family: 'Fraunces', serif;
+        font-size: 1rem;
+        color: var(--ink);
+        line-height: 1.55;
+        padding: 0.05rem 0;
+      }
+      .translation-empty {
+        font-family: 'Fraunces', serif;
+        font-size: 0.95rem;
+        font-style: italic;
+        color: var(--ink-faint);
+        margin: 0 0 0.4rem;
+      }
+      .translation-examples {
+        margin-top: 0.55rem;
+      }
+      .translation-example {
+        font-family: 'Fraunces', serif;
+        font-size: 0.875rem;
+        font-style: italic;
+        color: var(--ink-soft);
+        line-height: 1.45;
+        margin: 0 0 0.35rem;
+      }
+      .translation-divider {
+        border: none;
+        border-top: 1px solid var(--rule-soft);
+        margin: 0.85rem 0 0.75rem;
+      }
+      .translation-add-btn {
+        font-family: 'Fraunces', serif;
+        font-size: 0.9rem;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--ink-soft);
+        padding: 0;
+        transition: color 0.12s;
+      }
+      .translation-add-btn:hover { color: var(--ink); }
+      .translation-add-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+      }
+      .translation-add-form-label {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 10px;
+        color: var(--ink-faint);
+        margin: 0 0 3px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .translation-add-form input,
+      .translation-add-form textarea {
+        width: 100%;
+        box-sizing: border-box;
+        font-family: 'Fraunces', serif;
+        font-size: 0.9rem;
+        background: var(--paper-2);
+        border: 1px solid var(--rule);
+        border-radius: 4px;
+        padding: 0.4rem 0.6rem;
+        color: var(--ink);
+        resize: none;
+        outline: none;
+        transition: border-color 0.12s;
+      }
+      .translation-add-form input:focus,
+      .translation-add-form textarea:focus {
+        border-color: var(--terracotta-soft);
+      }
+      .translation-add-form-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.2rem;
+      }
+      .translation-confirmed {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 12px;
+        color: var(--moss);
+        margin: 0;
+        padding: 0.15rem 0;
+      }
+
+      @media (max-width: 900px) {
+        .translation-panel { display: none; }
+      }
     `}</style>
   );
 }

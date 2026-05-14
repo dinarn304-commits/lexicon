@@ -48,6 +48,19 @@ export default function App() {
         if (!saved.readingPreferences) {
           saved.readingPreferences = { textSize: 18, marginWidth: 'normal', lineSpacing: 1.5 };
         }
+        saved.translationLanguage = saved.translationLanguage ?? 'en';
+        if (!saved.discoveredWordsDeckInitialized) {
+          if (!saved.decks.some((d) => d.id === 'deck-discovered-words')) {
+            saved.decks.push({
+              id: 'deck-discovered-words',
+              name: 'okuma sırasında keşfedilen kelimeler',
+              description: '',
+              language: 'Turkish',
+              createdAt: new Date().toISOString(),
+            });
+          }
+          saved.discoveredWordsDeckInitialized = true;
+        }
         setData(saved);
       } else {
         const initial = createSampleData();
@@ -125,6 +138,10 @@ export default function App() {
 
   function updateReadingPreferences(prefs) {
     persist({ ...data, readingPreferences: prefs });
+  }
+
+  function updateTranslationLanguage(lang) {
+    persist({ ...data, translationLanguage: lang });
   }
 
   function updateReadingProgress(textId, newWordsRead) {
@@ -271,7 +288,7 @@ export default function App() {
 
         {view === 'guide' ? (
         <GuideView onBack={closeGuide} />
-      ) : mode === 'reading' ? <ReadingView data={data} onSaveText={saveText} onDeleteText={deleteText} onUpdateReadingProgress={updateReadingProgress} onUpdateReadingPreferences={updateReadingPreferences} /> : mode === 'speaking' ? <SpeakingView /> : (
+      ) : mode === 'reading' ? <ReadingView data={data} onSaveText={saveText} onDeleteText={deleteText} onUpdateReadingProgress={updateReadingProgress} onUpdateReadingPreferences={updateReadingPreferences} onSaveCard={saveCard} onUpdateTranslationLanguage={updateTranslationLanguage} /> : mode === 'speaking' ? <SpeakingView /> : (
         <>
         {view === 'home' && (
           <HomeView data={data} onOpenDeck={openDeck} onNewDeck={() => setView('addDeck')} onReorderDecks={reorderDecks} onOpenGuide={openGuide} />
