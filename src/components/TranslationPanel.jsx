@@ -8,6 +8,8 @@ export default function TranslationPanel({
   examples,
   loading,
   exampleSentence,
+  deepl,
+  onTranslateSentence,
   onClose,
   onLangChange,
   onAddCard,
@@ -32,6 +34,8 @@ export default function TranslationPanel({
     setConfirmed(true);
     setTimeout(() => setConfirmed(false), 2000);
   }
+
+  const deeplActive = Boolean(deepl?.sentence);
 
   return createPortal(
     <div className="translation-panel">
@@ -61,27 +65,53 @@ export default function TranslationPanel({
         <p className="translation-loading">looking up…</p>
       ) : (
         <>
-          {translations.length === 0 ? (
+          {translations.length > 0 ? (
+            <>
+              <ul className="translation-list">
+                {translations.map((t, i) => (
+                  <li key={i} className="translation-item">{t}</li>
+                ))}
+              </ul>
+              {examples.length > 0 && (
+                <div className="translation-examples">
+                  {examples.slice(0, 2).map((ex, i) => (
+                    <p key={i} className="translation-example">{ex}</p>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : !deeplActive ? (
             <p className="translation-empty">no translation found</p>
-          ) : (
-            <ul className="translation-list">
-              {translations.map((t, i) => (
-                <li key={i} className="translation-item">{t}</li>
-              ))}
-            </ul>
-          )}
-
-          {examples.length > 0 && (
-            <div className="translation-examples">
-              {examples.slice(0, 2).map((ex, i) => (
-                <p key={i} className="translation-example">{ex}</p>
-              ))}
-            </div>
-          )}
+          ) : null}
         </>
       )}
 
-      <hr className="translation-divider" />
+      {deeplActive && (
+        <div className="deepl-section">
+          <hr className="deepl-divider" />
+          <p className="deepl-label">sentence</p>
+          <p className="deepl-source">{deepl.sentence}</p>
+          {deepl.loading ? (
+            <p className="deepl-loading">· · ·</p>
+          ) : deepl.error ? (
+            <p className="deepl-fallback">Sentence translation unavailable just now.</p>
+          ) : (
+            <p className="deepl-translation">{deepl.translation}</p>
+          )}
+        </div>
+      )}
+
+      {!loading && translations.length > 0 && !deeplActive && (
+        <button className="translation-translate-sentence" onClick={onTranslateSentence}>
+          Translate sentence
+        </button>
+      )}
+
+      {deeplActive ? (
+        <div style={{ marginTop: '0.85rem' }} />
+      ) : (
+        <hr className="translation-divider" />
+      )}
 
       {confirmed ? (
         <p className="translation-confirmed">Added to deck</p>

@@ -1113,6 +1113,78 @@ export default function ThemeStyles() {
         padding: 0.15rem 0;
       }
 
+      /* ─── DeepL sentence section ────────────────────────────────── */
+      .deepl-section {
+        margin-top: 0.5rem;
+      }
+      .deepl-divider {
+        border: none;
+        border-top: 1px solid var(--rule);
+        margin: 0.75rem 0 0.65rem;
+      }
+      .deepl-label {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.63rem;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 0 0 0.3rem;
+      }
+      .deepl-source {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+        margin: 0 0 0.45rem;
+        line-height: 1.5;
+      }
+      .deepl-translation {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 0.95rem;
+        color: var(--ink);
+        margin: 0;
+        line-height: 1.5;
+      }
+      @keyframes deepl-pulse {
+        0%, 100% { opacity: 0.35; }
+        50%       { opacity: 1; }
+      }
+      .deepl-loading {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.85rem;
+        letter-spacing: 0.35em;
+        color: var(--terracotta);
+        margin: 0;
+        animation: deepl-pulse 1.4s ease-in-out infinite;
+      }
+      .deepl-fallback {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+        margin: 0;
+      }
+      .translation-translate-sentence {
+        display: block;
+        background: none;
+        border: none;
+        padding: 0;
+        margin-top: 0.65rem;
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.68rem;
+        color: var(--ink-soft);
+        cursor: pointer;
+        letter-spacing: 0.01em;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        text-decoration-color: transparent;
+        transition: color 0.12s ease, text-decoration-color 0.12s ease;
+      }
+      .translation-translate-sentence:hover {
+        color: var(--ink);
+        text-decoration-color: var(--rule);
+      }
+
       @media (max-width: 900px) {
         .translation-panel { display: none; }
       }

@@ -6,6 +6,7 @@ import TextCard from '../components/TextCard';
 import ReadingControl from '../components/ReadingControl';
 import TranslationPanel from '../components/TranslationPanel';
 import { makeCard } from '../utils/card';
+import { findSentence } from '../utils/sentence';
 
 const MARGIN_OPTIONS = ['narrow', 'normal', 'wide'];
 const MARGIN_WIDTHS  = { narrow: '28rem', normal: '36rem', wide: '48rem' };
@@ -147,6 +148,11 @@ function ReadingPane({
   const [translationExample, setTranslationExample] = useState('');
   const [translationResult, setTranslationResult] = useState({ translations: [], examples: [], loading: false });
 
+  const [deeplQuery, setDeeplQuery]   = useState(null);
+  const [deeplResult, setDeeplResult] = useState({ sentence: null, translation: null, loading: false, error: null });
+  const deeplSentenceRef  = useRef('');
+  const isMultiWordRef    = useRef(false);
+
   const translationLang = data.translationLanguage || 'en';
   const bodyRef = useRef(null);
 
@@ -155,15 +161,36 @@ function ReadingPane({
     setTranslationResult({ translations: [], examples: [], loading: true });
     fetch(`/api/glosbe?word=${encodeURIComponent(translationQuery)}&lang=${translationLang}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((json) =>
-        setTranslationResult({
-          translations: json.translations || [],
-          examples: json.examples || [],
-          loading: false,
-        })
-      )
+      .then((json) => {
+        const translations = json.translations || [];
+        const examples = json.examples || [];
+        setTranslationResult({ translations, examples, loading: false });
+        if (!isMultiWordRef.current && translations.length === 0) {
+          setDeeplQuery(deeplSentenceRef.current || translationQuery);
+        }
+      })
       .catch(() => setTranslationResult({ translations: [], examples: [], loading: false }));
   }, [translationQuery, translationLang]);
+
+  useEffect(() => {
+    if (!deeplQuery) return;
+    const targetLang = translationLang === 'ru' ? 'RU' : 'EN';
+    setDeeplResult({ sentence: deeplQuery, translation: null, loading: true, error: null });
+    fetch('/api/deepl', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: deeplQuery, targetLang }),
+    })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.error) {
+          setDeeplResult({ sentence: deeplQuery, translation: null, loading: false, error: json.error });
+        } else {
+          setDeeplResult({ sentence: deeplQuery, translation: json.translation, loading: false, error: null });
+        }
+      })
+      .catch(() => setDeeplResult({ sentence: deeplQuery, translation: null, loading: false, error: 'deepl_unavailable' }));
+  }, [deeplQuery, translationLang]);
 
   function handleMouseUp(e) {
     if (window.innerWidth <= 900) return;
@@ -191,9 +218,24 @@ function ReadingPane({
     }
 
     if (query) {
+      const multi = query.split(/\s+/).filter(Boolean).length > 1;
+      isMultiWordRef.current = multi;
+      deeplSentenceRef.current = multi ? query : findSentence(paraText, query);
+
       setTranslationQuery(query);
       setTranslationExample(paraText);
+      setDeeplResult({ sentence: null, translation: null, loading: false, error: null });
+
+      if (multi) {
+        setDeeplQuery(query);
+      } else {
+        setDeeplQuery(null);
+      }
     }
+  }
+
+  function handleTranslateSentence() {
+    setDeeplQuery(deeplSentenceRef.current || translationQuery);
   }
 
   // ── Block renderer ───────────────────────────────────────────────────────────
@@ -360,6 +402,8 @@ function ReadingPane({
           examples={translationResult.examples}
           loading={translationResult.loading}
           exampleSentence={translationExample}
+          deepl={deeplResult}
+          onTranslateSentence={handleTranslateSentence}
           onClose={() => setTranslationQuery(null)}
           onLangChange={onUpdateTranslationLanguage}
           onAddCard={(front, back, example) => {
