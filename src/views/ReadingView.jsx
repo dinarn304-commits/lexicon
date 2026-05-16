@@ -223,7 +223,7 @@ function ReadingPane({
       deeplSentenceRef.current = multi ? query : findSentence(paraText, query);
 
       setTranslationQuery(query);
-      setTranslationExample(paraText);
+      setTranslationExample(findSentence(paraText, query));
       setDeeplResult({ sentence: null, translation: null, loading: false, error: null });
 
       if (multi) {

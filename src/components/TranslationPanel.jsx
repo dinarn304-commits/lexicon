@@ -160,7 +160,7 @@ export default function TranslationPanel({
           </div>
         </div>
       ) : (
-        <button className="translation-add-btn" onClick={() => setAddingToDeck(true)}>
+        <button className="translation-add-btn" onClick={() => { setBackText(translations[0] || deepl?.translation || ''); setAddingToDeck(true); }}>
           + Add to deck
         </button>
       )}
