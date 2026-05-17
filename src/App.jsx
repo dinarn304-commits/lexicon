@@ -4,6 +4,7 @@ import { loadAppData, saveAppData } from './storage/storage';
 import { removeCardImage } from './storage/images';
 import { checkStorageHealth, requestPersistentStorage } from './storage/persistence';
 import { createSampleData } from './utils/card';
+import { getLanguageMeta } from './utils/language';
 import ThemeStyles from './components/ThemeStyles';
 import Loader from './components/Loader';
 import PageFooter from './components/PageFooter';
@@ -49,18 +50,12 @@ export default function App() {
           saved.readingPreferences = { textSize: 18, marginWidth: 'normal', lineSpacing: 1.5 };
         }
         saved.translationLanguage = saved.translationLanguage ?? 'en';
-        if (!saved.discoveredWordsDeckInitialized) {
-          if (!saved.decks.some((d) => d.id === 'deck-discovered-words')) {
-            saved.decks.push({
-              id: 'deck-discovered-words',
-              name: 'okuma sırasında keşfedilen kelimeler',
-              description: '',
-              language: 'Turkish',
-              createdAt: new Date().toISOString(),
-            });
-          }
-          saved.discoveredWordsDeckInitialized = true;
+        if (!saved.discoveredWordsDecks) {
+          const hasLegacyDeck = saved.decks.some((d) => d.id === 'deck-discovered-words');
+          saved.discoveredWordsDecks = hasLegacyDeck ? { tr: 'deck-discovered-words' } : {};
+          delete saved.discoveredWordsDeckInitialized;
         }
+        saved.texts = saved.texts.map((t) => t.sourceLanguage ? t : { ...t, sourceLanguage: 'tr' });
         setData(saved);
       } else {
         const initial = createSampleData();
@@ -120,7 +115,20 @@ export default function App() {
   function endSession() { setView('deck'); }
 
   function saveText(text) {
-    persist({ ...data, texts: [...(data.texts || []), text] });
+    const sourceLang = text.sourceLanguage || 'tr';
+    const newData = { ...data, texts: [...(data.texts || []), text] };
+    if (!newData.discoveredWordsDecks[sourceLang]) {
+      const meta = getLanguageMeta(sourceLang);
+      newData.decks = [...newData.decks, {
+        id: meta.deckId,
+        name: meta.deckName,
+        description: '',
+        language: meta.deckLanguageLabel,
+        createdAt: new Date().toISOString(),
+      }];
+      newData.discoveredWordsDecks = { ...newData.discoveredWordsDecks, [sourceLang]: meta.deckId };
+    }
+    persist(newData);
   }
 
   function deleteText(textId) {

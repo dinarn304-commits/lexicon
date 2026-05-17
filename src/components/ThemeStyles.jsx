@@ -529,6 +529,31 @@ export default function ThemeStyles() {
         min-height: 0;
         padding-bottom: 24px;
       }
+      .source-lang-picker {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+      .source-lang-btn {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 11px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 2px;
+        color: var(--ink-soft);
+        transition: color 0.12s;
+        line-height: 1;
+        letter-spacing: 0.03em;
+        text-decoration: none;
+      }
+      .source-lang-btn.active {
+        color: var(--ink);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+      .source-lang-btn:not(.active):hover { color: var(--ink); }
       .import-text-modal-footer {
         flex-shrink: 0;
         display: flex;
@@ -764,15 +789,35 @@ export default function ThemeStyles() {
         justify-content: center;
       }
       .text-card-delete:hover { color: var(--terracotta); }
+      .text-card-title-row {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin: 0 0 8px;
+        padding-right: 24px;
+        flex-wrap: wrap;
+      }
       .text-card-title {
         font-family: 'Fraunces', serif;
         font-weight: 500;
         font-size: 17px;
         letter-spacing: -0.01em;
         color: var(--ink);
-        margin: 0 0 8px;
-        padding-right: 24px;
+        margin: 0;
         line-height: 1.3;
+      }
+      .text-card-lang-tag {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 10px;
+        background: var(--terracotta-soft);
+        color: var(--terracotta);
+        padding: 2px 6px;
+        border-radius: 999px;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+        flex-shrink: 0;
+        line-height: 1;
+        align-self: center;
       }
       .text-card-excerpt {
         position: relative;

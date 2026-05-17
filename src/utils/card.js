@@ -49,7 +49,7 @@ export function createSampleData() {
   return {
     cardsAddedByUser: 0,
     translationLanguage: 'en',
-    discoveredWordsDeckInitialized: true,
+    discoveredWordsDecks: { tr: 'deck-discovered-words' },
     decks: [
       {
         id: welcomeId,

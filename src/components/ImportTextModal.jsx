@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { useEditor, EditorContent, ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -6,6 +6,7 @@ import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { makeId } from '../utils/id';
 import { processImageFile } from '../storage/images';
+import { SOURCE_LANGUAGES } from '../utils/language';
 
 const textImageKey = (id) => `srs-text-image-${id}`;
 
@@ -44,8 +45,9 @@ function countWordsInTipTapDoc(doc) {
   return texts.join(' ').trim().split(/\s+/).filter(Boolean).length;
 }
 
-export default function ImportTextModal({ onClose, onSave }) {
+export default function ImportTextModal({ onClose, onSave, defaultLang = 'tr' }) {
   const [title, setTitle] = useState('');
+  const [sourceLang, setSourceLang] = useState(defaultLang);
   const [hasContent, setHasContent] = useState(false);
   const valid = title.trim().length > 0 && hasContent;
 
@@ -102,6 +104,7 @@ export default function ImportTextModal({ onClose, onSave }) {
       content: doc,
       wordCount,
       wordsReadInThisText: 0,
+      sourceLanguage: sourceLang,
       createdAt: now,
       updatedAt: now,
     });
@@ -115,6 +118,20 @@ export default function ImportTextModal({ onClose, onSave }) {
         <h2 className="feedback-modal-heading">Import text</h2>
 
         <div className="import-text-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div className="source-lang-picker">
+            {SOURCE_LANGUAGES.map((lang, i) => (
+              <Fragment key={lang.code}>
+                {i > 0 && <span className="translation-lang-divider">/</span>}
+                <button
+                  type="button"
+                  className={`source-lang-btn${sourceLang === lang.code ? ' active' : ''}`}
+                  onClick={() => setSourceLang(lang.code)}
+                >
+                  {lang.nativeName}
+                </button>
+              </Fragment>
+            ))}
+          </div>
           <input
             className="input"
             type="text"

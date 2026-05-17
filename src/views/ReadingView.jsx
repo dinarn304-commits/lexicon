@@ -407,7 +407,8 @@ function ReadingPane({
           onClose={() => setTranslationQuery(null)}
           onLangChange={onUpdateTranslationLanguage}
           onAddCard={(front, back, example) => {
-            const card = makeCard('deck-discovered-words', front, back, example);
+            const deckId = data.discoveredWordsDecks?.[text.sourceLanguage] ?? 'deck-discovered-words';
+            const card = makeCard(deckId, front, back, example);
             onSaveCard(card);
           }}
         />
@@ -433,6 +434,11 @@ export default function ReadingView({
   const texts = [...(data.texts || [])].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
+
+  const defaultLang = useMemo(() => {
+    if (!texts.length) return 'tr';
+    return texts[0].sourceLanguage || 'tr';
+  }, [texts]);
 
   const selectedText = selectedTextId
     ? data.texts.find((t) => t.id === selectedTextId)
@@ -499,6 +505,7 @@ export default function ReadingView({
         <ImportTextModal
           onClose={() => setImportOpen(false)}
           onSave={onSaveText}
+          defaultLang={defaultLang}
         />
       )}
     </div>

@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { getLanguageMeta } from '../utils/language';
 
 function extractPlainText(doc) {
   const parts = [];
@@ -30,7 +31,12 @@ export default function TextCard({ text, onOpen, onDelete }) {
       <button className="text-card-delete" onClick={handleDelete} aria-label="Delete text">
         <X size={13} />
       </button>
-      <h3 className="text-card-title">{text.title}</h3>
+      <div className="text-card-title-row">
+        <h3 className="text-card-title">{text.title}</h3>
+        <span className="text-card-lang-tag">
+          {getLanguageMeta(text.sourceLanguage || 'tr').nativeName}
+        </span>
+      </div>
       <div className="text-card-excerpt">
         <p className="text-card-excerpt-text">{excerpt}</p>
       </div>
