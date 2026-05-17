@@ -186,6 +186,41 @@ export default function App() {
   }
 
   function saveCard(card) {
+    const deckExists = data.decks.find((d) => d.id === card.deckId);
+
+    if (deckExists) {
+      persist({
+        ...data,
+        cards: [...data.cards, card],
+        cardsAddedByUser: (data.cardsAddedByUser || 0) + 1,
+      });
+      return;
+    }
+
+    // Deck is missing — check if it was a discovered-words deck that the user deleted
+    const discoveredEntry = Object.entries(data.discoveredWordsDecks ?? {})
+      .find(([, deckId]) => deckId === card.deckId);
+
+    if (discoveredEntry) {
+      const [sourceLang] = discoveredEntry;
+      const meta = getLanguageMeta(sourceLang);
+      const recreatedDeck = {
+        id: meta.deckId,
+        name: meta.deckName,
+        description: '',
+        language: meta.deckLanguageLabel,
+        createdAt: new Date().toISOString(),
+      };
+      persist({
+        ...data,
+        decks: [...data.decks, recreatedDeck],
+        cards: [...data.cards, card],
+        cardsAddedByUser: (data.cardsAddedByUser || 0) + 1,
+      });
+      return;
+    }
+
+    // Missing deck is not a discovered-words deck; save the card without recreating.
     persist({
       ...data,
       cards: [...data.cards, card],

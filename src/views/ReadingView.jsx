@@ -153,6 +153,9 @@ function ReadingPane({
   const deeplSentenceRef  = useRef('');
   const isMultiWordRef    = useRef(false);
 
+  const [dictionaryQuery, setDictionaryQuery]   = useState(null);
+  const [dictionaryResult, setDictionaryResult] = useState({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
+
   const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru' };
   const sourceLang = text.sourceLanguage || 'tr';
   const translationLang = data.translationLanguagesBySource?.[sourceLang] ?? TRANSLATION_DEFAULTS[sourceLang] ?? 'ru';
@@ -195,6 +198,21 @@ function ReadingPane({
       .catch(() => setDeeplResult({ sentence: deeplQuery, translation: null, loading: false, error: 'deepl_unavailable' }));
   }, [deeplQuery, translationLang]);
 
+  useEffect(() => {
+    if (!dictionaryQuery) return;
+    setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: true, error: null });
+    fetch(`/api/dictionary?word=${encodeURIComponent(dictionaryQuery)}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.error) {
+          setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: json.error });
+        } else {
+          setDictionaryResult({ ...json, loading: false, error: null });
+        }
+      })
+      .catch(() => setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: 'dictionary_unavailable' }));
+  }, [dictionaryQuery]);
+
   function handleMouseUp(e) {
     if (window.innerWidth <= 900) return;
 
@@ -233,6 +251,13 @@ function ReadingPane({
         setDeeplQuery(query);
       } else {
         setDeeplQuery(null);
+      }
+
+      setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
+      if (sourceLang === 'en' && !multi) {
+        setDictionaryQuery(query);
+      } else {
+        setDictionaryQuery(null);
       }
     }
   }
@@ -410,6 +435,7 @@ function ReadingPane({
           onTranslateSentence={handleTranslateSentence}
           onClose={() => setTranslationQuery(null)}
           onLangChange={(targetLang) => onUpdateTranslationLanguage(sourceLang, targetLang)}
+          dictionary={dictionaryResult}
           onAddCard={(front, back, example) => {
             const deckId = data.discoveredWordsDecks?.[text.sourceLanguage] ?? 'deck-discovered-words';
             const card = makeCard(deckId, front, back, example);

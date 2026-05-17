@@ -1,5 +1,6 @@
 import { useState, useEffect, Fragment } from 'react';
 import { createPortal } from 'react-dom';
+import { Volume2 } from 'lucide-react';
 
 const ALL_TARGET_LANGS = ['tr', 'en', 'es', 'fr', 'ru', 'de', 'ar', 'zh'];
 
@@ -12,6 +13,7 @@ export default function TranslationPanel({
   loading,
   exampleSentence,
   deepl,
+  dictionary,
   onTranslateSentence,
   onClose,
   onLangChange,
@@ -39,6 +41,16 @@ export default function TranslationPanel({
   }
 
   const deeplActive = Boolean(deepl?.sentence);
+
+  const isMultiWord = word ? word.split(/\s+/).filter(Boolean).length > 1 : false;
+  const showDictionary = sourceLang === 'en'
+    && !isMultiWord
+    && dictionary?.error !== 'not_found'
+    && (dictionary?.loading || dictionary?.word !== null || dictionary?.error != null);
+
+  function playAudio(url) {
+    try { new Audio(url).play(); } catch {}
+  }
 
   return createPortal(
     <div className="translation-panel">
@@ -106,6 +118,50 @@ export default function TranslationPanel({
         <button className="translation-translate-sentence" onClick={onTranslateSentence}>
           Translate sentence
         </button>
+      )}
+
+      {showDictionary && (
+        <div className="dictionary-section">
+          <hr className="dictionary-divider" />
+          <p className="dictionary-label">definitions</p>
+          {dictionary.loading ? (
+            <p className="deepl-loading">· · ·</p>
+          ) : dictionary.error ? (
+            <p className="dictionary-unavailable">Definitions unavailable just now.</p>
+          ) : (
+            <>
+              {(dictionary.phonetic || dictionary.audio) && (
+                <div className="dictionary-phonetic-row">
+                  {dictionary.phonetic && (
+                    <span className="dictionary-phonetic">{dictionary.phonetic}</span>
+                  )}
+                  {dictionary.audio && (
+                    <button
+                      className="dictionary-audio-btn"
+                      onClick={() => playAudio(dictionary.audio)}
+                      aria-label="Play pronunciation"
+                    >
+                      <Volume2 size={13} />
+                    </button>
+                  )}
+                </div>
+              )}
+              {(dictionary.meanings || []).map((meaning, i) => (
+                <div key={i} className="dictionary-meaning">
+                  <p className="dictionary-pos">{meaning.partOfSpeech}</p>
+                  {meaning.definitions.map((def, j) => (
+                    <div key={j} className="dictionary-def-item">
+                      <p className="dictionary-definition">{def.definition}</p>
+                      {def.example && (
+                        <p className="dictionary-example">{def.example}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
       )}
 
       {deeplActive ? (

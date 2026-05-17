@@ -1234,6 +1234,83 @@ export default function ThemeStyles() {
         text-decoration-color: var(--rule);
       }
 
+      /* ─── Dictionary section ────────────────────────────────── */
+      .dictionary-section {
+        margin-top: 0.15rem;
+      }
+      .dictionary-divider {
+        border: none;
+        border-top: 1px solid var(--rule);
+        margin: 0.75rem 0 0.65rem;
+      }
+      .dictionary-label {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.63rem;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin: 0 0 0.3rem;
+      }
+      .dictionary-phonetic-row {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin: 0 0 0.5rem;
+      }
+      .dictionary-phonetic {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+      }
+      .dictionary-audio-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--terracotta);
+        padding: 0;
+        display: flex;
+        align-items: center;
+        line-height: 1;
+        transition: color 0.12s;
+      }
+      .dictionary-audio-btn:hover { color: var(--ink); }
+      .dictionary-meaning {
+        margin-bottom: 0.45rem;
+      }
+      .dictionary-pos {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 0.78rem;
+        color: var(--ink-soft);
+        margin: 0 0 0.2rem;
+      }
+      .dictionary-def-item {
+        margin-bottom: 0.3rem;
+      }
+      .dictionary-definition {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 0.875rem;
+        color: var(--ink);
+        margin: 0;
+        line-height: 1.5;
+      }
+      .dictionary-example {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 0.81rem;
+        color: var(--ink-soft);
+        margin: 0.1rem 0 0;
+        padding-left: 0.6rem;
+        line-height: 1.45;
+      }
+      .dictionary-unavailable {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+        margin: 0;
+      }
+
       @media (max-width: 900px) {
         .translation-panel { display: none; }
       }
