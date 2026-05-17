@@ -996,11 +996,13 @@ export default function ThemeStyles() {
         top: 6rem;
         right: 2rem;
         width: 22rem;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
         background: var(--paper);
         border: 1px solid var(--terracotta-soft);
         border-radius: 6px;
         box-shadow: 0 2px 12px rgba(42, 31, 21, 0.10), 0 1px 3px rgba(42, 31, 21, 0.08);
-        padding: 1.25rem 1.25rem 1.1rem;
         z-index: 100;
       }
       .translation-panel-close {
@@ -1020,6 +1022,29 @@ export default function ThemeStyles() {
       .translation-panel-close:hover {
         color: var(--ink);
         background: var(--terracotta-soft);
+      }
+      .translation-panel-header {
+        flex-shrink: 0;
+        padding: 1.25rem 1.25rem 0;
+      }
+      .translation-panel-body {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 0.35rem 1.25rem 0;
+        scrollbar-width: thin;
+        scrollbar-color: var(--rule) transparent;
+      }
+      .translation-panel-body::-webkit-scrollbar { width: 4px; }
+      .translation-panel-body::-webkit-scrollbar-track { background: transparent; }
+      .translation-panel-body::-webkit-scrollbar-thumb {
+        background: var(--rule);
+        border-radius: 2px;
+      }
+      .translation-panel-footer {
+        flex-shrink: 0;
+        border-top: 1px solid var(--rule-soft);
+        padding: 0.75rem 1.25rem 1.1rem;
       }
       .translation-panel-word {
         font-family: 'Fraunces', serif;
@@ -1243,13 +1268,27 @@ export default function ThemeStyles() {
         border-top: 1px solid var(--rule);
         margin: 0.75rem 0 0.65rem;
       }
+      .dictionary-label-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        margin: 0 0 0.3rem;
+      }
       .dictionary-label {
         font-family: 'DM Mono', ui-monospace, monospace;
         font-size: 0.63rem;
         color: var(--ink-soft);
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        margin: 0 0 0.3rem;
+        margin: 0;
+      }
+      .dictionary-toggle {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.63rem;
+        color: var(--ink-soft);
+        line-height: 1;
+        user-select: none;
       }
       .dictionary-phonetic-row {
         display: flex;
