@@ -1035,6 +1035,7 @@ export default function ThemeStyles() {
         align-items: center;
         gap: 0.3rem;
         margin-bottom: 0.85rem;
+        flex-wrap: wrap;
       }
       .translation-lang-btn {
         font-family: 'DM Mono', ui-monospace, monospace;
@@ -1051,7 +1052,10 @@ export default function ThemeStyles() {
       }
       .translation-lang-btn.active {
         color: var(--terracotta);
-        font-weight: 600;
+        text-decoration: underline;
+        text-decoration-color: var(--terracotta);
+        text-underline-offset: 3px;
+        text-decoration-thickness: 1px;
       }
       .translation-lang-btn:not(.active):hover { color: var(--ink-soft); }
       .translation-lang-divider {

@@ -17,7 +17,8 @@ export default async function handler(req, res) {
     return res.status(200).json({ error: 'deepl_unavailable' });
   }
 
-  if (targetLang !== 'RU' && targetLang !== 'EN') {
+  const VALID_TARGET_LANGS = ['TR', 'EN', 'ES', 'FR', 'RU', 'DE', 'AR', 'ZH'];
+  if (!VALID_TARGET_LANGS.includes(targetLang)) {
     return res.status(200).json({ error: 'deepl_unavailable' });
   }
 

@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { createPortal } from 'react-dom';
+
+const ALL_TARGET_LANGS = ['tr', 'en', 'es', 'fr', 'ru', 'de', 'ar', 'zh'];
 
 export default function TranslationPanel({
   word,
   lang,
+  sourceLang,
   translations,
   examples,
   loading,
@@ -46,19 +49,17 @@ export default function TranslationPanel({
       <h3 className="translation-panel-word">{word}</h3>
 
       <div className="translation-lang-toggle">
-        <button
-          className={`translation-lang-btn${lang === 'ru' ? ' active' : ''}`}
-          onClick={() => onLangChange('ru')}
-        >
-          ru
-        </button>
-        <span className="translation-lang-divider">/</span>
-        <button
-          className={`translation-lang-btn${lang === 'en' ? ' active' : ''}`}
-          onClick={() => onLangChange('en')}
-        >
-          en
-        </button>
+        {ALL_TARGET_LANGS.filter((l) => l !== sourceLang).map((l, i) => (
+          <Fragment key={l}>
+            {i > 0 && <span className="translation-lang-divider">·</span>}
+            <button
+              className={`translation-lang-btn${lang === l ? ' active' : ''}`}
+              onClick={() => onLangChange(l)}
+            >
+              {l}
+            </button>
+          </Fragment>
+        ))}
       </div>
 
       {loading ? (
@@ -69,7 +70,7 @@ export default function TranslationPanel({
             <>
               <ul className="translation-list">
                 {translations.map((t, i) => (
-                  <li key={i} className="translation-item">{t}</li>
+                  <li key={i} className="translation-item" dir="auto">{t}</li>
                 ))}
               </ul>
               {examples.length > 0 && (
@@ -96,7 +97,7 @@ export default function TranslationPanel({
           ) : deepl.error ? (
             <p className="deepl-fallback">Sentence translation unavailable just now.</p>
           ) : (
-            <p className="deepl-translation">{deepl.translation}</p>
+            <p className="deepl-translation" dir="auto">{deepl.translation}</p>
           )}
         </div>
       )}

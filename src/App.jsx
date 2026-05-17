@@ -49,7 +49,12 @@ export default function App() {
         if (!saved.readingPreferences) {
           saved.readingPreferences = { textSize: 18, marginWidth: 'normal', lineSpacing: 1.5 };
         }
-        saved.translationLanguage = saved.translationLanguage ?? 'en';
+        if (!saved.translationLanguagesBySource) {
+          saved.translationLanguagesBySource = saved.translationLanguage
+            ? { tr: saved.translationLanguage }
+            : {};
+        }
+        delete saved.translationLanguage;
         if (!saved.discoveredWordsDecks) {
           const hasLegacyDeck = saved.decks.some((d) => d.id === 'deck-discovered-words');
           saved.discoveredWordsDecks = hasLegacyDeck ? { tr: 'deck-discovered-words' } : {};
@@ -148,8 +153,8 @@ export default function App() {
     persist({ ...data, readingPreferences: prefs });
   }
 
-  function updateTranslationLanguage(lang) {
-    persist({ ...data, translationLanguage: lang });
+  function updateTranslationLanguage(sourceLang, targetLang) {
+    persist({ ...data, translationLanguagesBySource: { ...data.translationLanguagesBySource, [sourceLang]: targetLang } });
   }
 
   function updateReadingProgress(textId, newWordsRead) {

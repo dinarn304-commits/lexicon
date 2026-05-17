@@ -1,17 +1,23 @@
 import { parse } from 'node-html-parser';
 
 export default async function handler(req, res) {
-  const { word, lang } = req.query;
+  const { word, lang, sourceLang = 'tr' } = req.query;
+
+  const VALID_TARGET_LANGS = ['tr', 'en', 'es', 'fr', 'ru', 'de', 'ar', 'zh'];
+  const VALID_SOURCE_LANGS = ['tr', 'en', 'es'];
 
   if (!word || !lang) {
     return res.status(400).json({ error: 'Missing required parameters: word and lang' });
   }
-  if (lang !== 'ru' && lang !== 'en') {
-    return res.status(400).json({ error: 'lang must be "ru" or "en"' });
+  if (!VALID_TARGET_LANGS.includes(lang)) {
+    return res.status(400).json({ error: 'Invalid lang parameter' });
+  }
+  if (!VALID_SOURCE_LANGS.includes(sourceLang)) {
+    return res.status(400).json({ error: 'Invalid sourceLang parameter' });
   }
 
   try {
-    const url = `https://glosbe.com/tr/${lang}/${encodeURIComponent(word.trim())}`;
+    const url = `https://glosbe.com/${sourceLang}/${lang}/${encodeURIComponent(word.trim())}`;
 
     const response = await fetch(url, {
       headers: {

@@ -153,13 +153,15 @@ function ReadingPane({
   const deeplSentenceRef  = useRef('');
   const isMultiWordRef    = useRef(false);
 
-  const translationLang = data.translationLanguage || 'en';
+  const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru' };
+  const sourceLang = text.sourceLanguage || 'tr';
+  const translationLang = data.translationLanguagesBySource?.[sourceLang] ?? TRANSLATION_DEFAULTS[sourceLang] ?? 'ru';
   const bodyRef = useRef(null);
 
   useEffect(() => {
     if (!translationQuery) return;
     setTranslationResult({ translations: [], examples: [], loading: true });
-    fetch(`/api/glosbe?word=${encodeURIComponent(translationQuery)}&lang=${translationLang}`)
+    fetch(`/api/glosbe?word=${encodeURIComponent(translationQuery)}&lang=${translationLang}&sourceLang=${sourceLang}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((json) => {
         const translations = json.translations || [];
@@ -174,7 +176,8 @@ function ReadingPane({
 
   useEffect(() => {
     if (!deeplQuery) return;
-    const targetLang = translationLang === 'ru' ? 'RU' : 'EN';
+    const DEEPL_CODES = { tr: 'TR', en: 'EN', es: 'ES', fr: 'FR', ru: 'RU', de: 'DE', ar: 'AR', zh: 'ZH' };
+    const targetLang = DEEPL_CODES[translationLang] || 'EN';
     setDeeplResult({ sentence: deeplQuery, translation: null, loading: true, error: null });
     fetch('/api/deepl', {
       method: 'POST',
@@ -398,6 +401,7 @@ function ReadingPane({
         <TranslationPanel
           word={translationQuery}
           lang={translationLang}
+          sourceLang={sourceLang}
           translations={translationResult.translations}
           examples={translationResult.examples}
           loading={translationResult.loading}
@@ -405,7 +409,7 @@ function ReadingPane({
           deepl={deeplResult}
           onTranslateSentence={handleTranslateSentence}
           onClose={() => setTranslationQuery(null)}
-          onLangChange={onUpdateTranslationLanguage}
+          onLangChange={(targetLang) => onUpdateTranslationLanguage(sourceLang, targetLang)}
           onAddCard={(front, back, example) => {
             const deckId = data.discoveredWordsDecks?.[text.sourceLanguage] ?? 'deck-discovered-words';
             const card = makeCard(deckId, front, back, example);
