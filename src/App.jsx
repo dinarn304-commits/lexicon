@@ -28,6 +28,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [reviewQueue, setReviewQueue] = useState([]);
   const [sessionStats, setSessionStats] = useState({ total: 0, again: 0, hard: 0, good: 0, easy: 0 });
+  const [direction, setDirection] = useState('forward');
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
@@ -347,6 +348,8 @@ export default function App() {
             cards={deckCards}
             onBack={backHome}
             onStartReview={startReview}
+            direction={direction}
+            onSetDirection={setDirection}
             onAddCard={() => setView('addCard')}
             onEditCard={(id) => { setEditingCardId(id); setView('editCard'); }}
             onDeleteCard={deleteCard}
@@ -355,7 +358,7 @@ export default function App() {
           />
         )}
         {view === 'review' && (
-          <ReviewView queue={reviewQueue} onRate={rateCard} onEnd={endSession} sessionStats={sessionStats} />
+          <ReviewView queue={reviewQueue} onRate={rateCard} onEnd={endSession} sessionStats={sessionStats} direction={direction} />
         )}
         {view === 'addDeck' && (
           <DeckForm onSave={saveDeck} onCancel={backHome} />

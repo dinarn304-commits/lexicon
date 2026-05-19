@@ -3,7 +3,7 @@ import { ChevronLeft, Plus, GraduationCap, Pencil, Trash2 } from 'lucide-react';
 import { isDue } from '../algorithm/scheduler';
 import CardThumbnail from '../components/CardThumbnail';
 
-export default function DeckView({ deck, cards, onBack, onStartReview, onAddCard, onEditCard, onDeleteCard, onDeleteDeck, onEditDeck }) {
+export default function DeckView({ deck, cards, onBack, onStartReview, direction, onSetDirection, onAddCard, onEditCard, onDeleteCard, onDeleteDeck, onEditDeck }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const due = cards.filter(isDue);
 
@@ -68,19 +68,39 @@ export default function DeckView({ deck, cards, onBack, onStartReview, onAddCard
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6 flex-wrap">
-          <button
-            className="btn btn-primary px-6 py-3 flex items-center gap-2"
-            onClick={onStartReview}
-            disabled={due.length === 0}
-            style={{ opacity: due.length === 0 ? 0.4 : 1 }}
-          >
-            <GraduationCap size={18} />
-            {due.length > 0 ? `Review ${due.length} card${due.length === 1 ? '' : 's'}` : 'Nothing due'}
-          </button>
-          <button className="btn btn-ghost px-5 py-3 flex items-center gap-2" onClick={onAddCard}>
-            <Plus size={16} /> Add card
-          </button>
+        <div className="mt-6">
+          {due.length > 0 && (
+            <div className="text-center mb-4">
+              <div className="mono mb-3" style={{ fontSize: 13, color: 'var(--ink-soft)', letterSpacing: '0.12em' }}>
+                begin with
+              </div>
+              <div className="flex gap-4 justify-center">
+                {[['forward', 'word'], ['reverse', 'meaning']].map(([value, label]) => (
+                  <button
+                    key={value}
+                    className={`mode-opt${direction === value ? ' active' : ''}`}
+                    onClick={() => onSetDirection(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex gap-3 flex-wrap">
+            <button
+              className="btn btn-primary px-6 py-3 flex items-center gap-2"
+              onClick={onStartReview}
+              disabled={due.length === 0}
+              style={{ opacity: due.length === 0 ? 0.4 : 1 }}
+            >
+              <GraduationCap size={18} />
+              {due.length > 0 ? `Review ${due.length} card${due.length === 1 ? '' : 's'}` : 'Nothing due'}
+            </button>
+            <button className="btn btn-ghost px-5 py-3 flex items-center gap-2" onClick={onAddCard}>
+              <Plus size={16} /> Add card
+            </button>
+          </div>
         </div>
         <p className="mono text-xs mt-3" style={{ color: 'var(--ink-faint)' }}>
           Enter to review · N to add card

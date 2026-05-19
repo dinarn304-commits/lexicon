@@ -3,7 +3,7 @@ import { ChevronLeft, Sparkles } from 'lucide-react';
 import { loadCardImage } from '../storage/images';
 import { previewInterval } from '../utils/interval';
 
-export default function ReviewView({ queue, onRate, onEnd, sessionStats }) {
+export default function ReviewView({ queue, onRate, onEnd, sessionStats, direction = 'forward' }) {
   const [revealed, setRevealed] = useState(false);
   const [imageSrc, setImageSrc] = useState(null);
   const card = queue[0];
@@ -68,6 +68,12 @@ export default function ReviewView({ queue, onRate, onEnd, sessionStats }) {
     { label: 'Easy',  quality: 5, interval: previewInterval(card, 5) },
   ];
 
+  const isReverse = direction === 'reverse';
+  const promptLabel = isReverse ? '· MEANING ·' : '· WORD ·';
+  const promptText  = isReverse ? card.back     : card.front;
+  const answerLabel = isReverse ? '· WORD ·'    : '· MEANING ·';
+  const answerText  = isReverse ? card.front    : card.back;
+
   return (
     <div className="max-w-2xl mx-auto px-6 py-10 fade-up">
       <div className="flex items-center justify-between mb-8">
@@ -81,10 +87,15 @@ export default function ReviewView({ queue, onRate, onEnd, sessionStats }) {
 
       <div className="flashcard p-12 mb-6" onClick={() => !revealed && setRevealed(true)}>
         <div className="flex flex-col items-center justify-center text-center" style={{ minHeight: 280 }}>
-          <div className="ornament text-xs mb-6">· WORD ·</div>
+          <div className="ornament text-xs mb-6">{promptLabel}</div>
           <div className="display text-5xl mb-4" style={{ lineHeight: 1.15 }}>
-            {card.front}
+            {promptText}
           </div>
+          {isReverse && imageSrc && (
+            <div className="image-frame review mt-4">
+              <img src={imageSrc} alt="" />
+            </div>
+          )}
           {revealed ? (
             <>
               <div className="my-4 flex items-center gap-3" style={{ width: '100%', maxWidth: '200px' }}>
@@ -92,11 +103,11 @@ export default function ReviewView({ queue, onRate, onEnd, sessionStats }) {
                 <span className="ornament text-xs">❧</span>
                 <hr style={{ flex: 1, borderColor: 'var(--rule)' }} />
               </div>
-              <div className="ornament text-xs mb-4">· MEANING ·</div>
+              <div className="ornament text-xs mb-4">{answerLabel}</div>
               <div className="display text-5xl mb-4" style={{ lineHeight: 1.15 }}>
-                {card.back}
+                {answerText}
               </div>
-              {imageSrc && (
+              {!isReverse && imageSrc && (
                 <div className="image-frame review mt-4 fade-up">
                   <img src={imageSrc} alt="" />
                 </div>
