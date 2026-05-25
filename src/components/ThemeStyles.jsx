@@ -1353,6 +1353,119 @@ export default function ThemeStyles() {
       @media (max-width: 900px) {
         .translation-panel { display: none; }
       }
+
+      /* ─── URL import ────────────────────────────────────────────── */
+      .url-import-link-row {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-top: 0.1rem;
+        margin-bottom: 0.1rem;
+      }
+      .url-import-link {
+        font-family: 'Fraunces', serif;
+        font-style: italic;
+        font-size: 0.88rem;
+        color: var(--ink-soft);
+        background: transparent;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        transition: color 0.15s ease;
+        line-height: 1;
+      }
+      .url-import-link:hover:not(:disabled) { color: var(--terracotta); }
+      .url-import-link:disabled { cursor: default; }
+      .url-import-link.url-import-link-soft {
+        font-size: 0.78rem;
+        opacity: 0.55;
+        cursor: default;
+      }
+      .url-import-dismiss {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.82rem;
+        color: var(--ink-faint);
+        background: transparent;
+        border: none;
+        padding: 0 2px;
+        cursor: pointer;
+        line-height: 1;
+        transition: color 0.15s ease;
+      }
+      .url-import-dismiss:hover { color: var(--terracotta); }
+      .url-import-input-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.4rem;
+      }
+      .url-import-input {
+        font-family: 'Fraunces', serif;
+        font-style: italic;
+        font-size: 0.9rem;
+        background: var(--paper-2);
+        border: 1px solid var(--rule);
+        color: var(--ink);
+        border-radius: 3px;
+        padding: 7px 10px;
+        outline: none;
+        transition: border-color 0.18s ease;
+        flex: 1;
+        min-width: 0;
+        box-sizing: border-box;
+      }
+      .url-import-input:focus { border-color: var(--terracotta); }
+      .url-import-input::placeholder { color: var(--ink-faint); font-style: italic; }
+      .url-import-fetch-button {
+        font-family: 'Fraunces', serif;
+        font-size: 0.85rem;
+        color: var(--ink-soft);
+        background: transparent;
+        border: 1px solid var(--rule);
+        border-radius: 3px;
+        padding: 6px 12px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: color 0.15s ease, border-color 0.15s ease;
+        flex-shrink: 0;
+      }
+      .url-import-fetch-button:hover { color: var(--ink); border-color: var(--ink-soft); }
+      .url-import-progress {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+      .url-import-progress-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--terracotta);
+        flex-shrink: 0;
+        animation: deepl-pulse 1.4s ease-in-out infinite;
+      }
+      .url-import-progress-text {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+      }
+      .url-import-warning {
+        font-family: 'Fraunces', serif;
+        font-style: italic;
+        font-size: 0.88rem;
+        color: var(--ink-soft);
+        line-height: 1.45;
+        margin: 0.35rem 0 0;
+        padding: 0;
+      }
+      .url-import-source-line {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.72rem;
+        color: var(--ink-faint);
+        margin: -8px 0 0;
+        letter-spacing: 0.02em;
+      }
+
     `}</style>
   );
 }
