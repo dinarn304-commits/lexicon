@@ -1466,6 +1466,192 @@ export default function ThemeStyles() {
         letter-spacing: 0.02em;
       }
 
+      /* ─── Share button ──────────────────────────────────────────── */
+      .share-btn {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 14px;
+        color: var(--ink-soft);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        transition: color 0.18s ease;
+        white-space: nowrap;
+      }
+      .share-btn:hover { color: var(--terracotta); }
+
+      .share-inline-pulse {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--terracotta);
+        animation: deepl-pulse 1.4s ease-in-out infinite;
+        vertical-align: middle;
+      }
+
+      /* ─── Share modal ───────────────────────────────────────────── */
+      .share-modal {
+        background: var(--paper);
+        border: 1px solid var(--rule);
+        border-top: 2px solid var(--terracotta);
+        border-radius: 6px;
+        box-shadow: 0 8px 40px -8px rgba(42, 31, 21, 0.35), 0 2px 8px -4px rgba(42, 31, 21, 0.15);
+        padding: 32px;
+        max-width: 480px;
+        width: calc(100% - 40px);
+        position: relative;
+        box-sizing: border-box;
+      }
+      .share-modal-title {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-weight: 400;
+        font-size: 20px;
+        color: var(--ink);
+        margin: 0 0 18px;
+        line-height: 1.2;
+      }
+      .share-modal-url-input {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 13px;
+        color: var(--ink-soft);
+        background: var(--paper-2);
+        border: 1px solid var(--rule);
+        border-radius: 3px;
+        padding: 9px 11px;
+        width: 100%;
+        box-sizing: border-box;
+        outline: none;
+        cursor: text;
+        margin-bottom: 12px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .share-modal-url-input:focus { border-color: var(--terracotta-soft); }
+      .share-modal-copy-btn {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 13px;
+        color: var(--paper);
+        background: var(--terracotta);
+        border: none;
+        border-radius: 3px;
+        padding: 8px 18px;
+        cursor: pointer;
+        transition: background 0.18s ease;
+        display: block;
+        margin-bottom: 14px;
+      }
+      .share-modal-copy-btn:hover { background: var(--ink); }
+      .share-modal-hint {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 12px;
+        color: var(--ink-soft);
+        margin: 0 0 10px;
+        line-height: 1.5;
+      }
+      .share-modal-coda {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 14px;
+        color: var(--terracotta);
+        margin: 0;
+        text-align: center;
+      }
+      .share-modal-error {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 16px;
+        color: var(--ink-soft);
+        margin: 8px 0 0;
+        line-height: 1.65;
+      }
+
+      /* ─── Shared text view ──────────────────────────────────────── */
+      .shared-view-loading,
+      .shared-view-error {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: 80px 24px 96px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 20px;
+      }
+      .shared-view-loading-text {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 18px;
+        color: var(--ink-soft);
+        margin: 0;
+      }
+      .shared-view-error-text {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 18px;
+        color: var(--ink-soft);
+        margin: 0;
+        line-height: 1.55;
+      }
+      .shared-view-home-link {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 13px;
+        color: var(--terracotta);
+        text-decoration: none;
+        transition: color 0.18s ease;
+      }
+      .shared-view-home-link:hover { color: var(--ink); }
+      .shared-view-save-section {
+        margin-top: 48px;
+        display: flex;
+        justify-content: center;
+        padding-bottom: 32px;
+      }
+      .shared-view-save-btn {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 13px;
+        color: var(--paper);
+        background: var(--terracotta);
+        border: none;
+        border-radius: 3px;
+        padding: 10px 22px;
+        cursor: pointer;
+        transition: background 0.18s ease;
+        letter-spacing: 0.02em;
+      }
+      .shared-view-save-btn:hover { background: var(--ink); }
+      .shared-view-save-btn.saved {
+        background: var(--terracotta-soft);
+        color: var(--terracotta);
+        cursor: default;
+      }
+      .shared-view-save-btn.saved:hover { background: var(--terracotta-soft); }
+
+      @keyframes toast-fade {
+        0%   { opacity: 0; transform: translateX(-50%) translateY(8px); }
+        12%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+        75%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+      }
+      .save-toast {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--terracotta);
+        color: var(--paper);
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 13px;
+        padding: 10px 20px;
+        border-radius: 4px;
+        z-index: 200;
+        white-space: nowrap;
+        animation: toast-fade 2.5s ease forwards;
+        pointer-events: none;
+      }
+
     `}</style>
   );
 }

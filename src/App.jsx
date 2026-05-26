@@ -17,6 +17,7 @@ import ReviewView from './views/ReviewView';
 import SpeakingView from './views/SpeakingView';
 import ReadingView from './views/ReadingView';
 import ReadingPane from './views/ReadingPane';
+import SharedTextView from './views/SharedTextView';
 import GuideView from './views/GuideView';
 import NotFoundView from './views/NotFoundView';
 
@@ -55,7 +56,7 @@ export default function App() {
   const location = useLocation();
 
   const mode =
-    location.pathname.startsWith('/reading')  ? 'reading'  :
+    location.pathname.startsWith('/read')     ? 'reading'  :
     location.pathname.startsWith('/speaking') ? 'speaking' :
     'vocabulary';
 
@@ -371,6 +372,15 @@ export default function App() {
                   onUpdateReadingProgress={updateReadingProgress}
                   onUpdateReadingPreferences={updateReadingPreferences}
                   onSaveCard={saveCard}
+                  onUpdateTranslationLanguage={updateTranslationLanguage}
+                />
+              } />
+              <Route path="/read/:slugAndToken" element={
+                <SharedTextView
+                  data={data}
+                  onSaveCard={saveCard}
+                  onSaveText={saveText}
+                  onUpdateReadingPreferences={updateReadingPreferences}
                   onUpdateTranslationLanguage={updateTranslationLanguage}
                 />
               } />

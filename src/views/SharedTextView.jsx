@@ -1,18 +1,25 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import WordCounter from '../components/WordCounter';
 import ReadingControl from '../components/ReadingControl';
 import TranslationPanel from '../components/TranslationPanel';
-import ShareModal from '../components/ShareModal';
 import { makeCard } from '../utils/card';
 import { findSentence } from '../utils/sentence';
-import NotFoundView from './NotFoundView';
+import { makeId } from '../utils/id';
 
 const MARGIN_OPTIONS = ['narrow', 'normal', 'wide'];
 const MARGIN_WIDTHS  = { narrow: '28rem', normal: '36rem', wide: '48rem' };
 const SPACING_OPTIONS = [1.1, 1.3, 1.5, 1.7, 1.9];
+const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru' };
 
-const textImageKey = (id) => `srs-text-image-${id}`;
+function countWordsInDoc(doc) {
+  const parts = [];
+  function walk(node) {
+    if (node.type === 'text') parts.push(node.text || '');
+    if (node.content) node.content.forEach(walk);
+  }
+  if (doc.content) doc.content.forEach(walk);
+  return parts.join(' ').trim().split(/\s+/).filter(Boolean).length;
+}
 
 function renderInline(nodes) {
   if (!nodes?.length) return null;
@@ -43,32 +50,45 @@ function renderInline(nodes) {
   });
 }
 
-function countBlockWords(node) {
-  const parts = [];
-  function walk(n) {
-    if (n.type === 'text') parts.push(n.text || '');
-    if (n.content) n.content.forEach(walk);
-  }
-  walk(node);
-  const joined = parts.join(' ').trim();
-  return joined ? joined.split(/\s+/).filter(Boolean).length : 0;
-}
-
-export default function ReadingPane({
+export default function SharedTextView({
   data,
-  onUpdateReadingProgress,
-  onUpdateReadingPreferences,
   onSaveCard,
+  onSaveText,
+  onUpdateReadingPreferences,
   onUpdateTranslationLanguage,
 }) {
-  const { textSlug } = useParams();
-  const text = data.texts?.find((t) => t.slug === textSlug);
-  const prefs = data.readingPreferences || { textSize: 18, marginWidth: 'normal', lineSpacing: 1.5 };
+  const { slugAndToken } = useParams();
+
+  const token = useMemo(() => {
+    const idx = slugAndToken.lastIndexOf('-');
+    return idx >= 0 ? slugAndToken.slice(idx + 1) : slugAndToken;
+  }, [slugAndToken]);
+
+  const [fetchState, setFetchState] = useState('loading');
+  const [shareData, setShareData] = useState(null);
+  const [saved, setSaved] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
-    document.title = text ? `Lexicon · ${text.title}` : 'Lexicon';
-  }, [text?.title]);
+    document.title = 'Lexicon · Loading…';
+    fetch(`/api/share?token=${encodeURIComponent(token)}`)
+      .then((r) => {
+        if (r.status === 404) return Promise.reject('not_found');
+        if (!r.ok) return Promise.reject('error');
+        return r.json();
+      })
+      .then((json) => {
+        setShareData(json);
+        setFetchState('found');
+        document.title = `Lexicon · ${json.title}`;
+      })
+      .catch((reason) => {
+        setFetchState(reason === 'not_found' ? 'not_found' : 'error');
+        document.title = 'Lexicon · Not found';
+      });
+  }, [token]);
 
+  const prefs = data.readingPreferences || { textSize: 18, marginWidth: 'normal', lineSpacing: 1.5 };
   const marginIdx  = MARGIN_OPTIONS.indexOf(prefs.marginWidth);
   const spacingIdx = SPACING_OPTIONS.indexOf(prefs.lineSpacing);
 
@@ -79,118 +99,19 @@ export default function ReadingPane({
   function decSpacing()   { onUpdateReadingPreferences({ ...prefs, lineSpacing: SPACING_OPTIONS[spacingIdx - 1] }); }
   function incSpacing()   { onUpdateReadingPreferences({ ...prefs, lineSpacing: SPACING_OPTIONS[spacingIdx + 1] }); }
 
-  const paragraphRefs = useRef([]);
-
-  const blocks = useMemo(
-    () => text?.content?.content || [],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [text?.id]
-  );
-
-  const cumulativeWords = useMemo(() => {
-    let total = 0;
-    return blocks.map((b) => { total += countBlockWords(b); return total; });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text?.id]);
-
-  const wordsReadRef = useRef(text?.wordsReadInThisText ?? 0);
-  useEffect(() => { wordsReadRef.current = text?.wordsReadInThisText ?? 0; });
-
-  const onUpdateRef = useRef(onUpdateReadingProgress);
-  useEffect(() => { onUpdateRef.current = onUpdateReadingProgress; });
-
-  useEffect(() => {
-    let ticking = false;
-    function handleScroll() {
-      if (ticking) return;
-      ticking = true;
-      setTimeout(() => {
-        ticking = false;
-        const midpoint = window.innerHeight / 2;
-        let maxReadIndex = -1;
-        const refs = paragraphRefs.current;
-        for (let i = 0; i < refs.length; i++) {
-          const el = refs[i];
-          if (!el) continue;
-          if (el.getBoundingClientRect().top < midpoint) {
-            maxReadIndex = i;
-          } else {
-            break;
-          }
-        }
-        if (maxReadIndex < 0) return;
-        const wordsRead = Math.min(cumulativeWords[maxReadIndex] || 0, text?.wordCount ?? 0);
-        if (wordsRead > wordsReadRef.current) {
-          wordsReadRef.current = wordsRead;
-          onUpdateRef.current(text?.id, wordsRead);
-        }
-      }, 100);
-    }
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text?.id]);
-
-  paragraphRefs.current = [];
-  function blockRef(index) {
-    return (el) => { if (el) paragraphRefs.current[index] = el; };
-  }
-
-  const [shareState, setShareState] = useState(null); // null | 'loading' | 'done' | 'error'
-  const [shareUrl, setShareUrl]     = useState(null);
-
-  async function handleShare() {
-    const images = {};
-    function walkForImages(node) {
-      if (node.type === 'image' && node.attrs?.src?.startsWith('text-image://')) {
-        const id = node.attrs.src.slice('text-image://'.length);
-        const data = localStorage.getItem(textImageKey(id));
-        if (data) images[id] = data;
-      }
-      if (node.content) node.content.forEach(walkForImages);
-    }
-    if (text.content) walkForImages(text.content);
-
-    setShareState('loading');
-    try {
-      const res = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: text.title,
-          content: text.content,
-          images,
-          sourceLanguage: text.sourceLanguage,
-          slug: text.slug || text.id,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        setShareState('error');
-      } else {
-        setShareUrl(json.url);
-        setShareState('done');
-      }
-    } catch {
-      setShareState('error');
-    }
-  }
-
+  // Translation panel state — replicated from ReadingPane
+  // (if a third copy ever appears, factor into a shared hook)
   const [translationQuery, setTranslationQuery]   = useState(null);
   const [translationExample, setTranslationExample] = useState('');
   const [translationResult, setTranslationResult] = useState({ translations: [], examples: [], loading: false });
-
   const [deeplQuery, setDeeplQuery]   = useState(null);
   const [deeplResult, setDeeplResult] = useState({ sentence: null, translation: null, loading: false, error: null });
   const deeplSentenceRef  = useRef('');
   const isMultiWordRef    = useRef(false);
-
   const [dictionaryQuery, setDictionaryQuery]   = useState(null);
   const [dictionaryResult, setDictionaryResult] = useState({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
 
-  const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru' };
-
-  const sourceLang = text?.sourceLanguage || 'tr';
+  const sourceLang = shareData?.sourceLanguage || 'tr';
   const translationLang = data.translationLanguagesBySource?.[sourceLang] ?? TRANSLATION_DEFAULTS[sourceLang] ?? 'ru';
   const bodyRef = useRef(null);
 
@@ -248,11 +169,9 @@ export default function ReadingPane({
 
   function handleMouseUp(e) {
     if (window.innerWidth <= 900) return;
-
     const sel = window.getSelection();
     let query = '';
     let paraText = '';
-
     if (sel && !sel.isCollapsed) {
       const selected = sel.toString().trim();
       if (selected && bodyRef.current?.contains(sel.anchorNode)) {
@@ -265,27 +184,21 @@ export default function ReadingPane({
       if (wordEl && bodyRef.current?.contains(wordEl)) {
         query = (wordEl.textContent || '').replace(/[,.!?;:'")\]…]+$/, '').trim();
         const paraEl = wordEl.closest('[data-paragraph-index]');
-        paraText = paraEl?.textContent?.trim()
-          || wordEl.closest('h1')?.textContent?.trim()
-          || '';
+        paraText = paraEl?.textContent?.trim() || wordEl.closest('h1')?.textContent?.trim() || '';
       }
     }
-
     if (query) {
       const multi = query.split(/\s+/).filter(Boolean).length > 1;
       isMultiWordRef.current = multi;
       deeplSentenceRef.current = multi ? query : findSentence(paraText, query);
-
       setTranslationQuery(query);
       setTranslationExample(findSentence(paraText, query));
       setDeeplResult({ sentence: null, translation: null, loading: false, error: null });
-
       if (multi) {
         setDeeplQuery(query);
       } else {
         setDeeplQuery(null);
       }
-
       setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
       if (sourceLang === 'en' && !multi) {
         setDictionaryQuery(query);
@@ -299,11 +212,13 @@ export default function ReadingPane({
     setDeeplQuery(deeplSentenceRef.current || translationQuery);
   }
 
+  const images = shareData?.images || {};
+
   function renderBlock(node, index) {
     switch (node.type) {
       case 'paragraph':
         return (
-          <p key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-para">
+          <p key={index} data-paragraph-index={index} className="reading-para">
             {renderInline(node.content)}
           </p>
         );
@@ -312,7 +227,7 @@ export default function ReadingPane({
         const level = node.attrs?.level || 2;
         const Tag = `h${Math.min(level + 1, 6)}`;
         return (
-          <Tag key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-heading">
+          <Tag key={index} data-paragraph-index={index} className="reading-heading">
             {renderInline(node.content)}
           </Tag>
         );
@@ -320,7 +235,7 @@ export default function ReadingPane({
 
       case 'bulletList':
         return (
-          <ul key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-list">
+          <ul key={index} data-paragraph-index={index} className="reading-list">
             {(node.content || []).map((item, i) => (
               <li key={i}>
                 {(item.content || []).map((p, j) => (
@@ -333,7 +248,7 @@ export default function ReadingPane({
 
       case 'orderedList':
         return (
-          <ol key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-list">
+          <ol key={index} data-paragraph-index={index} className="reading-list">
             {(node.content || []).map((item, i) => (
               <li key={i}>
                 {(item.content || []).map((p, j) => (
@@ -346,7 +261,7 @@ export default function ReadingPane({
 
       case 'blockquote':
         return (
-          <blockquote key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-blockquote">
+          <blockquote key={index} data-paragraph-index={index} className="reading-blockquote">
             {(node.content || []).map((p, i) => (
               <p key={i} className="reading-para" style={{ margin: 0 }}>{renderInline(p.content)}</p>
             ))}
@@ -356,25 +271,23 @@ export default function ReadingPane({
       case 'codeBlock': {
         const codeText = (node.content || []).map((n) => n.text || '').join('');
         return (
-          <pre key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-code">
+          <pre key={index} data-paragraph-index={index} className="reading-code">
             <code>{codeText}</code>
           </pre>
         );
       }
 
       case 'horizontalRule':
-        return (
-          <hr key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-rule" />
-        );
+        return <hr key={index} data-paragraph-index={index} className="reading-rule" />;
 
       case 'image': {
         let src = node.attrs?.src || '';
         if (src.startsWith('text-image://')) {
           const imageId = src.slice('text-image://'.length);
-          src = localStorage.getItem(textImageKey(imageId)) || src;
+          src = images[imageId] || src;
         }
         return (
-          <div key={index} ref={blockRef(index)} data-paragraph-index={index}>
+          <div key={index} data-paragraph-index={index}>
             <img src={src} alt="" className="reading-image" />
           </div>
         );
@@ -383,7 +296,7 @@ export default function ReadingPane({
       default:
         if (node.content) {
           return (
-            <p key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-para">
+            <p key={index} data-paragraph-index={index} className="reading-para">
               {renderInline(node.content)}
             </p>
           );
@@ -392,20 +305,72 @@ export default function ReadingPane({
     }
   }
 
-  if (!text) return <NotFoundView />;
+  function handleSave() {
+    if (!shareData) return;
+
+    const doc = JSON.parse(JSON.stringify(shareData.content));
+    const idMap = {};
+    function rewriteImages(node) {
+      if (node.type === 'image' && node.attrs?.src?.startsWith('text-image://')) {
+        const oldId = node.attrs.src.slice('text-image://'.length);
+        if (!idMap[oldId]) {
+          const newId = makeId();
+          idMap[oldId] = newId;
+          const base64 = shareData.images[oldId];
+          if (base64) localStorage.setItem(`srs-text-image-${newId}`, base64);
+        }
+        node.attrs.src = `text-image://${idMap[oldId]}`;
+      }
+      if (node.content) node.content.forEach(rewriteImages);
+    }
+    rewriteImages(doc);
+
+    const now = new Date().toISOString();
+    onSaveText({
+      id: makeId(),
+      title: shareData.title,
+      content: doc,
+      wordCount: countWordsInDoc(doc),
+      wordsReadInThisText: 0,
+      sourceLanguage: shareData.sourceLanguage,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    setSaved(true);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2500);
+  }
 
   const panelOpen = translationQuery !== null;
-  const shareModalOpen = shareState === 'done' || shareState === 'error';
+  const blocks = shareData?.content?.content || [];
+
+  if (fetchState === 'loading') {
+    return (
+      <div className="shared-view-loading fade-up">
+        <div className="guide-divider" aria-hidden="true">· · ·</div>
+        <p className="shared-view-loading-text">« retrieving… »</p>
+      </div>
+    );
+  }
+
+  if (fetchState === 'not_found' || fetchState === 'error') {
+    return (
+      <div className="shared-view-error fade-up">
+        <div className="guide-divider" aria-hidden="true">· · ·</div>
+        <p className="shared-view-error-text">
+          « this shared text no longer exists, or the link was mistyped »
+        </p>
+        <Link className="shared-view-home-link" to="/">return to Lexicon</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="reading-pane fade-up">
-      <div className="reading-pane-header">
-        <Link className="guide-back-btn" to="/reading">← Back to library</Link>
+      <div className="reading-pane-header" style={{ justifyContent: 'flex-end' }}>
         <div className="reading-pane-header-right">
           <div className="reading-controls-row">
-            {shareState === 'loading'
-              ? <span className="share-inline-pulse" />
-              : <button className="share-btn" onClick={handleShare}>share ↗</button>}
             <ReadingControl
               value={`${prefs.textSize}px`}
               onDecrement={decTextSize}
@@ -428,7 +393,6 @@ export default function ReadingPane({
               atMax={spacingIdx >= SPACING_OPTIONS.length - 1}
             />
           </div>
-          <WordCounter today={data.wordsReadToday || 0} total={data.wordsReadTotal || 0} />
         </div>
       </div>
 
@@ -443,7 +407,7 @@ export default function ReadingPane({
         onMouseUp={handleMouseUp}
       >
         <h1 className="reading-pane-title">
-          {text.title.split(/(\s+)/).map((part, i) =>
+          {shareData.title.split(/(\s+)/).map((part, i) =>
             !part ? null : /^\s+$/.test(part) ? part : (
               <span key={i} className="reading-word">{part}</span>
             )
@@ -455,15 +419,18 @@ export default function ReadingPane({
         >
           {blocks.map((block, i) => renderBlock(block, i))}
         </div>
+
+        <div className="shared-view-save-section">
+          <button
+            className={`shared-view-save-btn${saved ? ' saved' : ''}`}
+            onClick={handleSave}
+          >
+            {saved ? 'saved ✓' : 'save this text to my library'}
+          </button>
+        </div>
       </div>
 
-      {shareModalOpen && (
-        <ShareModal
-          shareUrl={shareUrl}
-          error={shareState === 'error'}
-          onClose={() => { setShareState(null); setShareUrl(null); }}
-        />
-      )}
+      {showToast && <div className="save-toast">saved to your library</div>}
 
       {panelOpen && (
         <TranslationPanel
@@ -480,7 +447,7 @@ export default function ReadingPane({
           onLangChange={(targetLang) => onUpdateTranslationLanguage(sourceLang, targetLang)}
           dictionary={dictionaryResult}
           onAddCard={(front, back, example) => {
-            const deckId = data.discoveredWordsDecks?.[text.sourceLanguage] ?? 'deck-discovered-words';
+            const deckId = data.discoveredWordsDecks?.[sourceLang] ?? 'deck-discovered-words';
             const card = makeCard(deckId, front, back, example);
             onSaveCard(card);
           }}
