@@ -84,7 +84,7 @@ export default function CardForm({ deck, onSave, onCancel, userAddedCount = 0, e
         card.hasImage = true;
         await saveCardImage(card.id, imageDataUrl);
       }
-      onSave(card);
+      onSave(card, addAnother);
       setSavedCount((c) => c + 1);
       if (addAnother) clearForm();
     }

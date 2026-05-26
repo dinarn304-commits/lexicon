@@ -51,7 +51,7 @@ export default function DeckView({ data, direction, onSetDirection, onSaveCard, 
     return (
       <CardForm
         deck={deck}
-        onSave={(card) => { onSaveCard(card); setSubView('deck'); }}
+        onSave={(card, addAnother) => { onSaveCard(card); if (!addAnother) setSubView('deck'); }}
         onCancel={() => setSubView('deck')}
         userAddedCount={data.cardsAddedByUser || 0}
       />

@@ -261,8 +261,23 @@ export default function App() {
                               readBtnRef.current;
     const highlight = highlightRef.current;
     if (!btn || !highlight) return;
-    highlight.style.left = btn.offsetLeft + 'px';
-    highlight.style.width = btn.offsetWidth + 'px';
+
+    function measure() {
+      highlight.style.left = btn.offsetLeft + 'px';
+      highlight.style.width = btn.offsetWidth + 'px';
+    }
+
+    if (document.fonts.status === 'loaded') {
+      measure();
+      return;
+    }
+
+    let cancelled = false;
+    document.fonts.ready.then(() => {
+      if (cancelled) return;
+      measure();
+    });
+    return () => { cancelled = true; };
   }, [mode, loading]);
 
   if (loading) return <Loader />;
