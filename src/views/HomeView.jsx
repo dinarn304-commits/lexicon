@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Feather, GripVertical } from 'lucide-react';
 import { isDue } from '../algorithm/scheduler';
 import {
@@ -16,8 +17,10 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import DeckForm from './DeckForm';
 
-function SortableDeckTile({ deck, deckCards, due, onOpenDeck }) {
+function SortableDeckTile({ deck, deckCards, due }) {
+  const navigate = useNavigate();
   const {
     attributes,
     listeners,
@@ -39,7 +42,7 @@ function SortableDeckTile({ deck, deckCards, due, onOpenDeck }) {
       ref={setNodeRef}
       style={style}
       className="deck-tile relative group"
-      onClick={() => onOpenDeck(deck.id)}
+      onClick={() => navigate(`/vocabulary/${deck.slug}`)}
       {...attributes}
       {...listeners}
     >
@@ -81,7 +84,11 @@ function SortableDeckTile({ deck, deckCards, due, onOpenDeck }) {
   );
 }
 
-export default function HomeView({ data, onOpenDeck, onNewDeck, onReorderDecks, onOpenGuide }) {
+export default function HomeView({ data, onSaveDeck, onReorderDecks, onOpenGuide }) {
+  const [showAddDeck, setShowAddDeck] = useState(false);
+
+  useEffect(() => { document.title = 'Lexicon'; }, []);
+
   const totalDue = data.cards.filter(isDue).length;
   const totalCards = data.cards.length;
   const greeting = useMemo(() => {
@@ -102,6 +109,15 @@ export default function HomeView({ data, onOpenDeck, onNewDeck, onReorderDecks, 
     const oldIndex = data.decks.findIndex((d) => d.id === active.id);
     const newIndex = data.decks.findIndex((d) => d.id === over.id);
     onReorderDecks(arrayMove(data.decks, oldIndex, newIndex));
+  }
+
+  if (showAddDeck) {
+    return (
+      <DeckForm
+        onSave={(deck) => { onSaveDeck(deck); setShowAddDeck(false); }}
+        onCancel={() => setShowAddDeck(false)}
+      />
+    );
   }
 
   return (
@@ -139,7 +155,7 @@ export default function HomeView({ data, onOpenDeck, onNewDeck, onReorderDecks, 
       <section>
         <div className="flex items-baseline justify-between mb-1">
           <h2 className="display text-2xl">Your decks</h2>
-          <button className="btn btn-quiet text-sm flex items-center gap-1.5" onClick={onNewDeck}>
+          <button className="btn btn-quiet text-sm flex items-center gap-1.5" onClick={() => setShowAddDeck(true)}>
             <Plus size={14} /> New deck
           </button>
         </div>
@@ -188,7 +204,6 @@ export default function HomeView({ data, onOpenDeck, onNewDeck, onReorderDecks, 
                       deck={deck}
                       deckCards={deckCards}
                       due={due}
-                      onOpenDeck={onOpenDeck}
                     />
                   );
                 })}

@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { isDue, applyRating, migrateCard } from './algorithm/scheduler';
+import { Routes, Route, Navigate, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { applyRating, migrateCard } from './algorithm/scheduler';
 import { loadAppData, saveAppData } from './storage/storage';
 import { removeCardImage } from './storage/images';
 import { checkStorageHealth, requestPersistentStorage } from './storage/persistence';
 import { createSampleData } from './utils/card';
 import { getLanguageMeta } from './utils/language';
+import { slugify, ensureUniqueSlug } from './utils/slug';
 import ThemeStyles from './components/ThemeStyles';
 import Loader from './components/Loader';
 import PageFooter from './components/PageFooter';
@@ -12,24 +14,50 @@ import FeedbackModal from './components/FeedbackModal';
 import HomeView from './views/HomeView';
 import DeckView from './views/DeckView';
 import ReviewView from './views/ReviewView';
-import DeckForm from './views/DeckForm';
-import CardForm from './views/CardForm';
 import SpeakingView from './views/SpeakingView';
 import ReadingView from './views/ReadingView';
+import ReadingPane from './views/ReadingPane';
 import GuideView from './views/GuideView';
+import NotFoundView from './views/NotFoundView';
+
+function migrateSlugs(saved) {
+  const existingDeckSlugs = new Set(saved.decks.filter((d) => d.slug).map((d) => d.slug));
+  const existingTextSlugs = new Set((saved.texts || []).filter((t) => t.slug).map((t) => t.slug));
+  let changed = false;
+
+  const decks = saved.decks.map((deck) => {
+    if (deck.slug) return deck;
+    const slug = ensureUniqueSlug(slugify(deck.name), existingDeckSlugs);
+    existingDeckSlugs.add(slug);
+    changed = true;
+    return { ...deck, slug };
+  });
+
+  const texts = (saved.texts || []).map((text) => {
+    if (text.slug) return text;
+    const slug = ensureUniqueSlug(slugify(text.title), existingTextSlugs);
+    existingTextSlugs.add(slug);
+    changed = true;
+    return { ...text, slug };
+  });
+
+  return { changed, data: changed ? { ...saved, decks, texts } : saved };
+}
 
 export default function App() {
-  const [mode, setMode] = useState(() => localStorage.getItem('srs-active-mode') || 'vocabulary');
-  const [view, setView] = useState('home');
-  const [previousLocation, setPreviousLocation] = useState(null);
-  const [activeDeckId, setActiveDeckId] = useState(null);
-  const [editingCardId, setEditingCardId] = useState(null);
-  const [data, setData] = useState({ decks: [], cards: [] });
+  const [data, setData] = useState({ decks: [], cards: [], texts: [] });
   const [loading, setLoading] = useState(true);
-  const [reviewQueue, setReviewQueue] = useState([]);
-  const [sessionStats, setSessionStats] = useState({ total: 0, again: 0, hard: 0, good: 0, easy: 0 });
   const [direction, setDirection] = useState('forward');
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const mode =
+    location.pathname.startsWith('/reading')  ? 'reading'  :
+    location.pathname.startsWith('/speaking') ? 'speaking' :
+    'vocabulary';
 
   useEffect(() => {
     (async () => {
@@ -62,11 +90,19 @@ export default function App() {
           delete saved.discoveredWordsDeckInitialized;
         }
         saved.texts = saved.texts.map((t) => t.sourceLanguage ? t : { ...t, sourceLanguage: 'tr' });
-        setData(saved);
+
+        const { changed, data: migratedData } = migrateSlugs(saved);
+        if (changed) {
+          await saveAppData(migratedData);
+          setData(migratedData);
+        } else {
+          setData(saved);
+        }
       } else {
         const initial = createSampleData();
-        setData(initial);
-        await saveAppData(initial);
+        const { data: withSlugs } = migrateSlugs(initial);
+        setData(withSlugs);
+        await saveAppData(withSlugs);
       }
       setLoading(false);
     })();
@@ -77,57 +113,90 @@ export default function App() {
     await saveAppData(newData);
   }
 
-  const activeDeck = data.decks.find((d) => d.id === activeDeckId);
-  const deckCards = data.cards.filter((c) => c.deckId === activeDeckId);
-
-  function openDeck(id) { setActiveDeckId(id); setView('deck'); }
-  function backHome() { setActiveDeckId(null); setView('home'); }
-
-  function startReview() {
-    const due = data.cards
-      .filter((c) => c.deckId === activeDeckId && isDue(c))
-      .sort(() => Math.random() - 0.5);
-    if (due.length === 0) return;
-    setReviewQueue(due);
-    setSessionStats({ total: 0, again: 0, hard: 0, good: 0, easy: 0 });
-    setView('review');
+  function saveDeck(deck) {
+    const existingSlugs = new Set(data.decks.map((d) => d.slug).filter(Boolean));
+    const slug = ensureUniqueSlug(slugify(deck.name), existingSlugs);
+    const deckWithSlug = { ...deck, slug };
+    persist({ ...data, decks: [...data.decks, deckWithSlug] });
+    navigate(`/vocabulary/${slug}`);
   }
 
-  function rateCard(quality) {
-    const card = reviewQueue[0];
-    if (!card) return;
-    const updated = applyRating(card, quality);
-    persist({ ...data, cards: data.cards.map((c) => (c.id === card.id ? updated : c)) });
+  function updateDeck(updatedDeck) {
+    persist({ ...data, decks: data.decks.map((d) => (d.id === updatedDeck.id ? updatedDeck : d)) });
+  }
 
-    const key = quality === 1 ? 'again' : quality === 3 ? 'hard' : quality === 4 ? 'good' : 'easy';
-    setSessionStats((s) => ({ ...s, total: s.total + 1, [key]: s[key] + 1 }));
+  async function deleteDeck(deckId) {
+    const cardsToRemove = data.cards.filter((c) => c.deckId === deckId);
+    await Promise.all(cardsToRemove.filter((c) => c.hasImage).map((c) => removeCardImage(c.id)));
+    await persist({
+      ...data,
+      decks: data.decks.filter((d) => d.id !== deckId),
+      cards: data.cards.filter((c) => c.deckId !== deckId),
+    });
+    navigate('/vocabulary');
+  }
 
-    if (quality === 1) {
-      // "Again" always requeues to the end of the session so forgotten cards
-      // are consolidated within the same sitting, regardless of the algorithm's
-      // calculated next-review time (lapseStep = 20 min, which would otherwise
-      // fall outside the 5-minute window and drop the card from the session).
-      setReviewQueue((q) => [...q.slice(1), updated]);
-    } else {
-      const minutesUntilNext = (new Date(updated.nextReview) - new Date()) / 60000;
-      if (minutesUntilNext < 5) {
-        setReviewQueue((q) => [...q.slice(1), updated]);
-      } else {
-        setReviewQueue((q) => q.slice(1));
-      }
+  function persistCard(updatedCard) {
+    persist({ ...data, cards: data.cards.map((c) => (c.id === updatedCard.id ? updatedCard : c)) });
+  }
+
+  function saveCard(card) {
+    const deckExists = data.decks.find((d) => d.id === card.deckId);
+    if (deckExists) {
+      persist({ ...data, cards: [...data.cards, card], cardsAddedByUser: (data.cardsAddedByUser || 0) + 1 });
+      return;
     }
+    const discoveredEntry = Object.entries(data.discoveredWordsDecks ?? {})
+      .find(([, deckId]) => deckId === card.deckId);
+    if (discoveredEntry) {
+      const [sourceLang] = discoveredEntry;
+      const meta = getLanguageMeta(sourceLang);
+      const existingDeckSlugs = new Set(data.decks.map((d) => d.slug).filter(Boolean));
+      const deckSlug = ensureUniqueSlug(slugify(meta.deckName), existingDeckSlugs);
+      const recreatedDeck = {
+        id: meta.deckId,
+        name: meta.deckName,
+        slug: deckSlug,
+        description: '',
+        language: meta.deckLanguageLabel,
+        createdAt: new Date().toISOString(),
+      };
+      persist({
+        ...data,
+        decks: [...data.decks, recreatedDeck],
+        cards: [...data.cards, card],
+        cardsAddedByUser: (data.cardsAddedByUser || 0) + 1,
+      });
+      return;
+    }
+    persist({ ...data, cards: [...data.cards, card], cardsAddedByUser: (data.cardsAddedByUser || 0) + 1 });
   }
 
-  function endSession() { setView('deck'); }
+  function updateCard(updatedCard) {
+    persist({ ...data, cards: data.cards.map((c) => (c.id === updatedCard.id ? updatedCard : c)) });
+  }
+
+  async function deleteCard(id) {
+    const card = data.cards.find((c) => c.id === id);
+    if (card?.hasImage) await removeCardImage(id);
+    persist({ ...data, cards: data.cards.filter((c) => c.id !== id) });
+  }
 
   function saveText(text) {
     const sourceLang = text.sourceLanguage || 'tr';
-    const newData = { ...data, texts: [...(data.texts || []), text] };
+    const existingTextSlugs = new Set(data.texts.map((t) => t.slug).filter(Boolean));
+    const textSlug = ensureUniqueSlug(slugify(text.title), existingTextSlugs);
+    const textWithSlug = { ...text, slug: textSlug };
+
+    const newData = { ...data, texts: [...(data.texts || []), textWithSlug] };
     if (!newData.discoveredWordsDecks[sourceLang]) {
       const meta = getLanguageMeta(sourceLang);
+      const existingDeckSlugs = new Set(data.decks.map((d) => d.slug).filter(Boolean));
+      const deckSlug = ensureUniqueSlug(slugify(meta.deckName), existingDeckSlugs);
       newData.decks = [...newData.decks, {
         id: meta.deckId,
         name: meta.deckName,
+        slug: deckSlug,
         description: '',
         language: meta.deckLanguageLabel,
         createdAt: new Date().toISOString(),
@@ -180,86 +249,9 @@ export default function App() {
     persist({ ...data, decks: newDecks });
   }
 
-  function saveDeck(deck) {
-    persist({ ...data, decks: [...data.decks, deck] });
-    setActiveDeckId(deck.id);
-    setView('deck');
-  }
-
-  function saveCard(card) {
-    const deckExists = data.decks.find((d) => d.id === card.deckId);
-
-    if (deckExists) {
-      persist({
-        ...data,
-        cards: [...data.cards, card],
-        cardsAddedByUser: (data.cardsAddedByUser || 0) + 1,
-      });
-      return;
-    }
-
-    // Deck is missing — check if it was a discovered-words deck that the user deleted
-    const discoveredEntry = Object.entries(data.discoveredWordsDecks ?? {})
-      .find(([, deckId]) => deckId === card.deckId);
-
-    if (discoveredEntry) {
-      const [sourceLang] = discoveredEntry;
-      const meta = getLanguageMeta(sourceLang);
-      const recreatedDeck = {
-        id: meta.deckId,
-        name: meta.deckName,
-        description: '',
-        language: meta.deckLanguageLabel,
-        createdAt: new Date().toISOString(),
-      };
-      persist({
-        ...data,
-        decks: [...data.decks, recreatedDeck],
-        cards: [...data.cards, card],
-        cardsAddedByUser: (data.cardsAddedByUser || 0) + 1,
-      });
-      return;
-    }
-
-    // Missing deck is not a discovered-words deck; save the card without recreating.
-    persist({
-      ...data,
-      cards: [...data.cards, card],
-      cardsAddedByUser: (data.cardsAddedByUser || 0) + 1,
-    });
-  }
-
-  function updateCard(updatedCard) {
-    persist({ ...data, cards: data.cards.map((c) => (c.id === updatedCard.id ? updatedCard : c)) });
-    setEditingCardId(null);
-    setView('deck');
-  }
-
-  function updateDeck(updatedDeck) {
-    persist({ ...data, decks: data.decks.map((d) => (d.id === updatedDeck.id ? updatedDeck : d)) });
-    setView('deck');
-  }
-
-  async function deleteCard(id) {
-    const card = data.cards.find((c) => c.id === id);
-    if (card?.hasImage) await removeCardImage(id);
-    persist({ ...data, cards: data.cards.filter((c) => c.id !== id) });
-  }
-
-  async function deleteDeck() {
-    const cardsToRemove = data.cards.filter((c) => c.deckId === activeDeckId);
-    await Promise.all(cardsToRemove.filter((c) => c.hasImage).map((c) => removeCardImage(c.id)));
-    persist({
-      ...data,
-      decks: data.decks.filter((d) => d.id !== activeDeckId),
-      cards: data.cards.filter((c) => c.deckId !== activeDeckId),
-    });
-    backHome();
-  }
-
   const vocabBtnRef = useRef(null);
   const speakBtnRef = useRef(null);
-  const readBtnRef = useRef(null);
+  const readBtnRef  = useRef(null);
   const highlightRef = useRef(null);
 
   useLayoutEffect(() => {
@@ -271,27 +263,7 @@ export default function App() {
     if (!btn || !highlight) return;
     highlight.style.left = btn.offsetLeft + 'px';
     highlight.style.width = btn.offsetWidth + 'px';
-  }, [mode]);
-
-  function switchMode(m) {
-    setMode(m);
-    localStorage.setItem('srs-active-mode', m);
-  }
-
-  function openGuide() {
-    setPreviousLocation({ mode, view });
-    setView('guide');
-  }
-
-  function closeGuide() {
-    if (previousLocation) {
-      if (previousLocation.mode !== mode) switchMode(previousLocation.mode);
-      setView(previousLocation.view);
-      setPreviousLocation(null);
-    } else {
-      setView('home');
-    }
-  }
+  }, [mode, loading]);
 
   if (loading) return <Loader />;
 
@@ -300,93 +272,99 @@ export default function App() {
       <ThemeStyles />
       <div className="srs-content">
         <div className="srs-main">
-        {/* Mode switcher */}
-        <div className="mode-switcher-band">
-          <span className="mode-hairline-l" />
-          <div className="mode-switcher-track">
-            <span className="mode-switcher-highlight" ref={highlightRef} />
-            <button
-              ref={vocabBtnRef}
-              className="mode-opt"
-              style={{ color: mode === 'vocabulary' ? 'var(--ink)' : undefined }}
-              onClick={() => switchMode('vocabulary')}
-            >
-              vocabulary
-            </button>
-            <span className="mode-dot" aria-hidden="true">·</span>
-            <button
-              ref={speakBtnRef}
-              className="mode-opt"
-              style={{ color: mode === 'speaking' ? 'var(--ink)' : undefined }}
-              onClick={() => switchMode('speaking')}
-            >
-              speaking
-            </button>
-            <span className="mode-dot" aria-hidden="true">·</span>
-            <button
-              ref={readBtnRef}
-              className="mode-opt"
-              style={{ color: mode === 'reading' ? 'var(--ink)' : undefined }}
-              onClick={() => switchMode('reading')}
-            >
-              reading
-            </button>
+          <div className="mode-switcher-band">
+            <span className="mode-hairline-l" />
+            <div className="mode-switcher-track">
+              <span className="mode-switcher-highlight" ref={highlightRef} />
+              <NavLink
+                ref={vocabBtnRef}
+                to="/vocabulary"
+                className={() => 'mode-opt'}
+                style={({ isActive }) => ({ color: isActive ? 'var(--ink)' : undefined })}
+              >
+                vocabulary
+              </NavLink>
+              <span className="mode-dot" aria-hidden="true">·</span>
+              <NavLink
+                ref={speakBtnRef}
+                to="/speaking"
+                className={() => 'mode-opt'}
+                style={({ isActive }) => ({ color: isActive ? 'var(--ink)' : undefined })}
+              >
+                speaking
+              </NavLink>
+              <span className="mode-dot" aria-hidden="true">·</span>
+              <NavLink
+                ref={readBtnRef}
+                to="/reading"
+                className={() => 'mode-opt'}
+                style={({ isActive }) => ({ color: isActive ? 'var(--ink)' : undefined })}
+              >
+                reading
+              </NavLink>
+            </div>
+            <span className="mode-hairline-r" />
           </div>
-          <span className="mode-hairline-r" />
-        </div>
 
-        {view === 'guide' ? (
-        <GuideView onBack={closeGuide} />
-      ) : mode === 'reading' ? <ReadingView data={data} onSaveText={saveText} onDeleteText={deleteText} onUpdateReadingProgress={updateReadingProgress} onUpdateReadingPreferences={updateReadingPreferences} onSaveCard={saveCard} onUpdateTranslationLanguage={updateTranslationLanguage} /> : mode === 'speaking' ? <SpeakingView /> : (
-        <>
-        {view === 'home' && (
-          <HomeView data={data} onOpenDeck={openDeck} onNewDeck={() => setView('addDeck')} onReorderDecks={reorderDecks} onOpenGuide={openGuide} />
-        )}
-        {view === 'deck' && activeDeck && (
-          <DeckView
-            deck={activeDeck}
-            cards={deckCards}
-            onBack={backHome}
-            onStartReview={startReview}
-            direction={direction}
-            onSetDirection={setDirection}
-            onAddCard={() => setView('addCard')}
-            onEditCard={(id) => { setEditingCardId(id); setView('editCard'); }}
-            onDeleteCard={deleteCard}
-            onDeleteDeck={deleteDeck}
-            onEditDeck={() => setView('editDeck')}
-          />
-        )}
-        {view === 'review' && (
-          <ReviewView queue={reviewQueue} onRate={rateCard} onEnd={endSession} sessionStats={sessionStats} direction={direction} />
-        )}
-        {view === 'addDeck' && (
-          <DeckForm onSave={saveDeck} onCancel={backHome} />
-        )}
-        {view === 'editDeck' && activeDeck && (
-          <DeckForm initialDeck={activeDeck} onSave={updateDeck} onCancel={() => setView('deck')} />
-        )}
-        {view === 'addCard' && activeDeck && (
-          <CardForm
-            deck={activeDeck}
-            onSave={saveCard}
-            onCancel={() => setView('deck')}
-            userAddedCount={data.cardsAddedByUser || 0}
-          />
-        )}
-        {view === 'editCard' && activeDeck && editingCardId && (
-          <CardForm
-            deck={activeDeck}
-            existingCard={data.cards.find((c) => c.id === editingCardId)}
-            onSave={updateCard}
-            onCancel={() => { setEditingCardId(null); setView('deck'); }}
-          />
-        )}
-        </>
-        )}
+          {showGuide ? (
+            <GuideView onBack={() => setShowGuide(false)} />
+          ) : (
+            <Routes>
+              <Route path="/" element={<Navigate to="/vocabulary" replace />} />
+              <Route path="/vocabulary" element={
+                <HomeView
+                  data={data}
+                  onSaveDeck={saveDeck}
+                  onReorderDecks={reorderDecks}
+                  onOpenGuide={() => setShowGuide(true)}
+                />
+              } />
+              <Route path="/vocabulary/:deckSlug" element={
+                <DeckView
+                  data={data}
+                  direction={direction}
+                  onSetDirection={setDirection}
+                  onSaveCard={saveCard}
+                  onUpdateCard={updateCard}
+                  onUpdateDeck={updateDeck}
+                  onDeleteCard={deleteCard}
+                  onDeleteDeck={deleteDeck}
+                />
+              } />
+              <Route path="/vocabulary/:deckSlug/review" element={
+                <ReviewView
+                  data={data}
+                  direction={direction}
+                  onPersistCard={persistCard}
+                />
+              } />
+              <Route path="/speaking" element={<SpeakingView />} />
+              <Route path="/reading" element={
+                <ReadingView
+                  data={data}
+                  onSaveText={saveText}
+                  onDeleteText={deleteText}
+                  onUpdateReadingProgress={updateReadingProgress}
+                  onUpdateReadingPreferences={updateReadingPreferences}
+                  onSaveCard={saveCard}
+                  onUpdateTranslationLanguage={updateTranslationLanguage}
+                />
+              } />
+              <Route path="/reading/:textSlug" element={
+                <ReadingPane
+                  data={data}
+                  onUpdateReadingProgress={updateReadingProgress}
+                  onUpdateReadingPreferences={updateReadingPreferences}
+                  onSaveCard={saveCard}
+                  onUpdateTranslationLanguage={updateTranslationLanguage}
+                />
+              } />
+              <Route path="*" element={<NotFoundView />} />
+            </Routes>
+          )}
         </div>
-        {view !== 'guide' && (
-          <PageFooter onGuideClick={openGuide} onFeedbackClick={() => setFeedbackOpen(true)} />
+        {!showGuide && (
+          <PageFooter onGuideClick={() => setShowGuide(true)} onFeedbackClick={() => setFeedbackOpen(true)} />
         )}
       </div>
       {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}

@@ -43,6 +43,8 @@ function playChime(ctx) {
 const SHUFFLE_TIMINGS = [130, 145, 155, 160, 165, 175, 185, 205, 235, 270, 330, 380];
 
 export default function SpeakingView() {
+  useEffect(() => { document.title = 'Lexicon · Speaking'; }, []);
+
   const [level, setLevel] = useState('a1a2');
 
   const [duration, setDuration] = useState(() => {

@@ -1,12 +1,37 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ChevronLeft, Sparkles } from 'lucide-react';
+import { isDue, applyRating } from '../algorithm/scheduler';
 import { loadCardImage } from '../storage/images';
 import { previewInterval } from '../utils/interval';
 
-export default function ReviewView({ queue, onRate, onEnd, sessionStats, direction = 'forward' }) {
+export default function ReviewView({ data, direction = 'forward', onPersistCard }) {
+  const { deckSlug } = useParams();
+  const navigate = useNavigate();
+
+  const deck = data.decks.find((d) => d.slug === deckSlug);
+  const deckCards = deck ? data.cards.filter((c) => c.deckId === deck.id) : [];
+
+  const [reviewQueue, setReviewQueue] = useState(() =>
+    deck ? deckCards.filter(isDue).sort(() => Math.random() - 0.5) : []
+  );
+  const [sessionStats, setSessionStats] = useState({ total: 0, again: 0, hard: 0, good: 0, easy: 0 });
   const [revealed, setRevealed] = useState(false);
   const [imageSrc, setImageSrc] = useState(null);
-  const card = queue[0];
+
+  useEffect(() => {
+    document.title = deck ? `Lexicon · Reviewing ${deck.name}` : 'Lexicon';
+  }, [deck?.name]);
+
+  useEffect(() => {
+    if (!deck) return;
+    if (reviewQueue.length === 0 && sessionStats.total === 0) {
+      navigate(`/vocabulary/${deckSlug}`, { replace: true });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const card = reviewQueue[0];
 
   useEffect(() => { setRevealed(false); }, [card?.id]);
 
@@ -15,24 +40,19 @@ export default function ReviewView({ queue, onRate, onEnd, sessionStats, directi
       const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (!revealed) {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          setRevealed(true);
-        }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRevealed(true); }
       } else {
-        if (e.key === '1') onRate(1);
-        else if (e.key === '2') onRate(3);
-        else if (e.key === '3') onRate(4);
-        else if (e.key === '4') onRate(5);
-        else if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onRate(4);
-        }
+        if (e.key === '1') rateCard(1);
+        else if (e.key === '2') rateCard(3);
+        else if (e.key === '3') rateCard(4);
+        else if (e.key === '4') rateCard(5);
+        else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); rateCard(4); }
       }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [revealed, onRate]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealed, reviewQueue]);
 
   useEffect(() => {
     setImageSrc(null);
@@ -43,6 +63,27 @@ export default function ReviewView({ queue, onRate, onEnd, sessionStats, directi
     });
     return () => { cancelled = true; };
   }, [card?.id]);
+
+  function rateCard(quality) {
+    const current = reviewQueue[0];
+    if (!current) return;
+    const updated = applyRating(current, quality);
+    onPersistCard(updated);
+
+    const key = quality === 1 ? 'again' : quality === 3 ? 'hard' : quality === 4 ? 'good' : 'easy';
+    setSessionStats((s) => ({ ...s, total: s.total + 1, [key]: s[key] + 1 }));
+
+    if (quality === 1) {
+      setReviewQueue((q) => [...q.slice(1), updated]);
+    } else {
+      const minutesUntilNext = (new Date(updated.nextReview) - new Date()) / 60000;
+      if (minutesUntilNext < 5) {
+        setReviewQueue((q) => [...q.slice(1), updated]);
+      } else {
+        setReviewQueue((q) => q.slice(1));
+      }
+    }
+  }
 
   if (!card) {
     return (
@@ -56,7 +97,7 @@ export default function ReviewView({ queue, onRate, onEnd, sessionStats, directi
         <p className="mono text-sm mb-10" style={{ color: 'var(--ink-faint)' }}>
           {sessionStats.again} again · {sessionStats.hard} hard · {sessionStats.good} good · {sessionStats.easy} easy
         </p>
-        <button className="btn btn-primary px-6 py-3" onClick={onEnd}>Return to deck</button>
+        <Link className="btn btn-primary px-6 py-3" to={`/vocabulary/${deckSlug}`}>Return to deck</Link>
       </div>
     );
   }
@@ -77,11 +118,11 @@ export default function ReviewView({ queue, onRate, onEnd, sessionStats, directi
   return (
     <div className="max-w-2xl mx-auto px-6 py-10 fade-up">
       <div className="flex items-center justify-between mb-8">
-        <button className="btn btn-quiet text-sm flex items-center gap-1" onClick={onEnd}>
+        <Link className="btn btn-quiet text-sm flex items-center gap-1" to={`/vocabulary/${deckSlug}`}>
           <ChevronLeft size={16} /> End session
-        </button>
+        </Link>
         <div className="mono text-xs" style={{ color: 'var(--ink-soft)' }}>
-          {queue.length} remaining
+          {reviewQueue.length} remaining
         </div>
       </div>
 
@@ -135,7 +176,7 @@ export default function ReviewView({ queue, onRate, onEnd, sessionStats, directi
         <>
           <div className="grid grid-cols-4 gap-2 fade-up">
             {ratings.map((r) => (
-              <button key={r.label} className="rate-btn" onClick={() => onRate(r.quality)}>
+              <button key={r.label} className="rate-btn" onClick={() => rateCard(r.quality)}>
                 <div className="label">{r.label}</div>
                 <div className="interval">{r.interval}</div>
               </button>
