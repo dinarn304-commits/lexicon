@@ -246,6 +246,20 @@ export default function App() {
     });
   }
 
+  // For shared texts that aren't in data.texts — only the global counters advance.
+  function addReadingProgress(delta) {
+    if (delta <= 0) return;
+    setData((prev) => {
+      const next = {
+        ...prev,
+        wordsReadToday: (prev.wordsReadToday || 0) + delta,
+        wordsReadTotal: (prev.wordsReadTotal || 0) + delta,
+      };
+      saveAppData(next);
+      return next;
+    });
+  }
+
   function reorderDecks(newDecks) {
     persist({ ...data, decks: newDecks });
   }
@@ -268,17 +282,14 @@ export default function App() {
       highlight.style.width = btn.offsetWidth + 'px';
     }
 
-    if (document.fonts.status === 'loaded') {
-      measure();
-      return;
-    }
-
-    let cancelled = false;
-    document.fonts.ready.then(() => {
-      if (cancelled) return;
-      measure();
-    });
-    return () => { cancelled = true; };
+    // document.fonts.ready resolves when fonts are downloaded but before the
+    // browser has reflowed with the new metrics, so measuring there reads stale
+    // fallback-font dimensions. ResizeObserver fires after layout is complete,
+    // so it naturally catches the font-load reflow and any subsequent resizes.
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(btn);
+    return () => ro.disconnect();
   }, [mode, loading]);
 
   if (loading) return <Loader />;
@@ -380,6 +391,7 @@ export default function App() {
                   data={data}
                   onSaveCard={saveCard}
                   onSaveText={saveText}
+                  onAddReadingProgress={addReadingProgress}
                   onUpdateReadingPreferences={updateReadingPreferences}
                   onUpdateTranslationLanguage={updateTranslationLanguage}
                 />

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import WordCounter from '../components/WordCounter';
 import ReadingControl from '../components/ReadingControl';
 import TranslationPanel from '../components/TranslationPanel';
 import { makeCard } from '../utils/card';
@@ -19,6 +20,21 @@ function countWordsInDoc(doc) {
   }
   if (doc.content) doc.content.forEach(walk);
   return parts.join(' ').trim().split(/\s+/).filter(Boolean).length;
+}
+
+// Replicated from ReadingPane — callback shapes differ (ReadingPane uses
+// onUpdateReadingProgress(id, newTotal) with per-text tracking; SharedTextView
+// uses onAddReadingProgress(delta) for global-only counters since the shared
+// text is not in data.texts). Extract if a third copy ever appears.
+function countBlockWords(node) {
+  const parts = [];
+  function walk(n) {
+    if (n.type === 'text') parts.push(n.text || '');
+    if (n.content) n.content.forEach(walk);
+  }
+  walk(node);
+  const joined = parts.join(' ').trim();
+  return joined ? joined.split(/\s+/).filter(Boolean).length : 0;
 }
 
 function renderInline(nodes) {
@@ -54,6 +70,7 @@ export default function SharedTextView({
   data,
   onSaveCard,
   onSaveText,
+  onAddReadingProgress,
   onUpdateReadingPreferences,
   onUpdateTranslationLanguage,
 }) {
@@ -99,7 +116,57 @@ export default function SharedTextView({
   function decSpacing()   { onUpdateReadingPreferences({ ...prefs, lineSpacing: SPACING_OPTIONS[spacingIdx - 1] }); }
   function incSpacing()   { onUpdateReadingPreferences({ ...prefs, lineSpacing: SPACING_OPTIONS[spacingIdx + 1] }); }
 
-  // Translation panel state — replicated from ReadingPane
+  // ── Scroll-based word counter ──────────────────────────────────────────────
+  const paragraphRefs = useRef([]);
+  const wordsReadRef  = useRef(0);
+  const onAddProgressRef = useRef(onAddReadingProgress);
+  useEffect(() => { onAddProgressRef.current = onAddReadingProgress; });
+
+  const blocks = useMemo(
+    () => shareData?.content?.content || [],
+    [shareData]
+  );
+
+  const cumulativeWords = useMemo(() => {
+    let total = 0;
+    return blocks.map((b) => { total += countBlockWords(b); return total; });
+  }, [blocks]);
+
+  useEffect(() => {
+    if (!shareData) return;
+    const totalWords = countWordsInDoc(shareData.content);
+    let ticking = false;
+    function handleScroll() {
+      if (ticking) return;
+      ticking = true;
+      setTimeout(() => {
+        ticking = false;
+        const midpoint = window.innerHeight / 2;
+        let maxReadIndex = -1;
+        const refs = paragraphRefs.current;
+        for (let i = 0; i < refs.length; i++) {
+          const el = refs[i];
+          if (!el) continue;
+          if (el.getBoundingClientRect().top < midpoint) {
+            maxReadIndex = i;
+          } else {
+            break;
+          }
+        }
+        if (maxReadIndex < 0) return;
+        const wordsRead = Math.min(cumulativeWords[maxReadIndex] || 0, totalWords);
+        if (wordsRead > wordsReadRef.current) {
+          const delta = wordsRead - wordsReadRef.current;
+          wordsReadRef.current = wordsRead;
+          onAddProgressRef.current?.(delta);
+        }
+      }, 100);
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [shareData, cumulativeWords]);
+
+  // ── Translation panel state ────────────────────────────────────────────────
   // (if a third copy ever appears, factor into a shared hook)
   const [translationQuery, setTranslationQuery]   = useState(null);
   const [translationExample, setTranslationExample] = useState('');
@@ -214,11 +281,17 @@ export default function SharedTextView({
 
   const images = shareData?.images || {};
 
+  // Assign paragraph refs for scroll-based word counting
+  paragraphRefs.current = [];
+  function blockRef(index) {
+    return (el) => { if (el) paragraphRefs.current[index] = el; };
+  }
+
   function renderBlock(node, index) {
     switch (node.type) {
       case 'paragraph':
         return (
-          <p key={index} data-paragraph-index={index} className="reading-para">
+          <p key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-para">
             {renderInline(node.content)}
           </p>
         );
@@ -227,7 +300,7 @@ export default function SharedTextView({
         const level = node.attrs?.level || 2;
         const Tag = `h${Math.min(level + 1, 6)}`;
         return (
-          <Tag key={index} data-paragraph-index={index} className="reading-heading">
+          <Tag key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-heading">
             {renderInline(node.content)}
           </Tag>
         );
@@ -235,7 +308,7 @@ export default function SharedTextView({
 
       case 'bulletList':
         return (
-          <ul key={index} data-paragraph-index={index} className="reading-list">
+          <ul key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-list">
             {(node.content || []).map((item, i) => (
               <li key={i}>
                 {(item.content || []).map((p, j) => (
@@ -248,7 +321,7 @@ export default function SharedTextView({
 
       case 'orderedList':
         return (
-          <ol key={index} data-paragraph-index={index} className="reading-list">
+          <ol key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-list">
             {(node.content || []).map((item, i) => (
               <li key={i}>
                 {(item.content || []).map((p, j) => (
@@ -261,7 +334,7 @@ export default function SharedTextView({
 
       case 'blockquote':
         return (
-          <blockquote key={index} data-paragraph-index={index} className="reading-blockquote">
+          <blockquote key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-blockquote">
             {(node.content || []).map((p, i) => (
               <p key={i} className="reading-para" style={{ margin: 0 }}>{renderInline(p.content)}</p>
             ))}
@@ -271,14 +344,14 @@ export default function SharedTextView({
       case 'codeBlock': {
         const codeText = (node.content || []).map((n) => n.text || '').join('');
         return (
-          <pre key={index} data-paragraph-index={index} className="reading-code">
+          <pre key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-code">
             <code>{codeText}</code>
           </pre>
         );
       }
 
       case 'horizontalRule':
-        return <hr key={index} data-paragraph-index={index} className="reading-rule" />;
+        return <hr key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-rule" />;
 
       case 'image': {
         let src = node.attrs?.src || '';
@@ -287,7 +360,7 @@ export default function SharedTextView({
           src = images[imageId] || src;
         }
         return (
-          <div key={index} data-paragraph-index={index}>
+          <div key={index} ref={blockRef(index)} data-paragraph-index={index}>
             <img src={src} alt="" className="reading-image" />
           </div>
         );
@@ -296,7 +369,7 @@ export default function SharedTextView({
       default:
         if (node.content) {
           return (
-            <p key={index} data-paragraph-index={index} className="reading-para">
+            <p key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-para">
               {renderInline(node.content)}
             </p>
           );
@@ -306,7 +379,7 @@ export default function SharedTextView({
   }
 
   function handleSave() {
-    if (!shareData) return;
+    if (!shareData || saved) return;
 
     const doc = JSON.parse(JSON.stringify(shareData.content));
     const idMap = {};
@@ -343,7 +416,6 @@ export default function SharedTextView({
   }
 
   const panelOpen = translationQuery !== null;
-  const blocks = shareData?.content?.content || [];
 
   if (fetchState === 'loading') {
     return (
@@ -368,7 +440,14 @@ export default function SharedTextView({
 
   return (
     <div className="reading-pane fade-up">
-      <div className="reading-pane-header" style={{ justifyContent: 'flex-end' }}>
+      <div className="reading-pane-header">
+        <button
+          className={`shared-view-save-btn${saved ? ' saved' : ''}`}
+          onClick={handleSave}
+          disabled={saved}
+        >
+          {saved ? 'saved ✓' : 'save this text to my library'}
+        </button>
         <div className="reading-pane-header-right">
           <div className="reading-controls-row">
             <ReadingControl
@@ -393,6 +472,7 @@ export default function SharedTextView({
               atMax={spacingIdx >= SPACING_OPTIONS.length - 1}
             />
           </div>
+          <WordCounter today={data.wordsReadToday || 0} total={data.wordsReadTotal || 0} />
         </div>
       </div>
 
@@ -424,6 +504,7 @@ export default function SharedTextView({
           <button
             className={`shared-view-save-btn${saved ? ' saved' : ''}`}
             onClick={handleSave}
+            disabled={saved}
           >
             {saved ? 'saved ✓' : 'save this text to my library'}
           </button>
