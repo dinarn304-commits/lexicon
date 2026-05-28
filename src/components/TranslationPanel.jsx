@@ -18,6 +18,7 @@ export default function TranslationPanel({
   onClose,
   onLangChange,
   onAddCard,
+  define,
 }) {
   const [addingToDeck, setAddingToDeck] = useState(false);
   const [frontText, setFrontText] = useState(word);
@@ -77,6 +78,33 @@ export default function TranslationPanel({
       </div>
 
       <div className="translation-panel-body">
+        {define && (define.loading || (define.base && define.meaning)) && (
+          <div className="define-section">
+            <p className="define-label">· dictionary form ·</p>
+            {define.loading ? (
+              <span className="define-loading" />
+            ) : (
+              <>
+                <div className="define-form-line" dir="auto">
+                  {define.isInflected ? (
+                    <>
+                      <span className="define-input-word">{word}</span>
+                      <span className="define-arrow">→</span>
+                      <span className="define-base">{define.base}</span>
+                    </>
+                  ) : (
+                    <span className="define-base">{define.base}</span>
+                  )}
+                </div>
+                <p className="define-meaning" dir="auto">{define.meaning}</p>
+                {define.note && (
+                  <p className="define-note" dir="auto">{define.note}</p>
+                )}
+              </>
+            )}
+            <hr className="define-divider" />
+          </div>
+        )}
         {loading ? (
           <p className="translation-loading">looking up…</p>
         ) : (
@@ -226,7 +254,7 @@ export default function TranslationPanel({
         ) : (
           <button
             className="translation-add-btn"
-            onClick={() => { setBackText(translations[0] || deepl?.translation || ''); setAddingToDeck(true); }}
+            onClick={() => { setFrontText(define?.base || word); setBackText(define?.meaning || translations[0] || deepl?.translation || ''); setAddingToDeck(true); }}
           >
             + Add to deck
           </button>

@@ -188,6 +188,9 @@ export default function ReadingPane({
   const [dictionaryQuery, setDictionaryQuery]   = useState(null);
   const [dictionaryResult, setDictionaryResult] = useState({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
 
+  const [defineQuery, setDefineQuery] = useState(null);
+  const [defineResult, setDefineResult] = useState({ base: null, isInflected: false, meaning: null, note: null, example: null, loading: false, error: null });
+
   const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru' };
 
   const sourceLang = text?.sourceLanguage || 'tr';
@@ -246,6 +249,25 @@ export default function ReadingPane({
       .catch(() => setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: 'dictionary_unavailable' }));
   }, [dictionaryQuery]);
 
+  useEffect(() => {
+    if (!defineQuery) return;
+    setDefineResult({ base: null, isInflected: false, meaning: null, note: null, example: null, loading: true, error: null });
+    fetch('/api/define', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: defineQuery.word, sentence: defineQuery.sentence, sourceLang, targetLang: translationLang }),
+    })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.error) {
+          setDefineResult({ base: null, isInflected: false, meaning: null, note: null, example: null, loading: false, error: json.error });
+        } else {
+          setDefineResult({ ...json, loading: false, error: null });
+        }
+      })
+      .catch(() => setDefineResult({ base: null, isInflected: false, meaning: null, note: null, example: null, loading: false, error: 'define_failed' }));
+  }, [defineQuery, translationLang]);
+
   function handleMouseUp(e) {
     if (window.innerWidth <= 900) return;
 
@@ -292,6 +314,9 @@ export default function ReadingPane({
       } else {
         setDictionaryQuery(null);
       }
+
+      setDefineResult({ base: null, isInflected: false, meaning: null, note: null, example: null, loading: false, error: null });
+      setDefineQuery({ word: query, sentence: findSentence(paraText, query) });
     }
   }
 
@@ -479,6 +504,7 @@ export default function ReadingPane({
           onClose={() => setTranslationQuery(null)}
           onLangChange={(targetLang) => onUpdateTranslationLanguage(sourceLang, targetLang)}
           dictionary={dictionaryResult}
+          define={defineResult}
           onAddCard={(front, back, example) => {
             const deckId = data.discoveredWordsDecks?.[text.sourceLanguage] ?? 'deck-discovered-words';
             const card = makeCard(deckId, front, back, example);

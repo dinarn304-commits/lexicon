@@ -1350,6 +1350,68 @@ export default function ThemeStyles() {
         margin: 0;
       }
 
+      /* ─── AI define section ─────────────────────────────────── */
+      .define-section { margin-bottom: 0; }
+      .define-label {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.61rem;
+        color: var(--ink-faint);
+        letter-spacing: 0.1em;
+        margin: 0 0 0.45rem;
+      }
+      .define-form-line {
+        display: flex;
+        align-items: baseline;
+        gap: 0.35rem;
+        margin: 0 0 0.3rem;
+        flex-wrap: wrap;
+      }
+      .define-input-word {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 0.95rem;
+        color: var(--ink-soft);
+      }
+      .define-arrow {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.75rem;
+        color: var(--ink-faint);
+      }
+      .define-base {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 0.95rem;
+        color: var(--terracotta);
+        font-weight: 500;
+      }
+      .define-meaning {
+        font-family: 'Fraunces', Georgia, serif;
+        font-size: 1rem;
+        color: var(--ink);
+        margin: 0 0 0.3rem;
+        line-height: 1.45;
+      }
+      .define-note {
+        font-family: 'Fraunces', Georgia, serif;
+        font-style: italic;
+        font-size: 0.82rem;
+        color: var(--ink-soft);
+        margin: 0 0 0.25rem;
+        line-height: 1.45;
+      }
+      .define-loading {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--terracotta);
+        animation: deepl-pulse 1.4s ease-in-out infinite;
+        margin: 0.45rem 0 0.5rem;
+      }
+      .define-divider {
+        border: none;
+        border-top: 1px solid var(--rule);
+        margin: 0.6rem 0 0.65rem;
+      }
+
       @media (max-width: 900px) {
         .translation-panel { display: none; }
       }
