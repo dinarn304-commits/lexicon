@@ -46,8 +46,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: MODEL,
-        temperature: 0.2,
-        max_tokens: 400,
+        max_completion_tokens: 1500,
         response_format: { type: 'json_object' },
         messages: [
           {
@@ -80,8 +79,13 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      console.error(`OpenAI returned HTTP ${response.status}`);
-      return res.status(502).json({ error: 'define_failed' });
+      let detail = `HTTP ${response.status}`;
+      try {
+        const errBody = await response.json();
+        detail = errBody?.error?.message || errBody?.message || detail;
+      } catch {}
+      console.error(`OpenAI define failed: ${detail}`);
+      return res.status(502).json({ error: 'define_failed', detail });
     }
 
     const json = await response.json();
@@ -98,6 +102,6 @@ export default async function handler(req, res) {
     return res.status(200).json(parsed);
   } catch (err) {
     console.error('Define request failed:', err.message);
-    return res.status(502).json({ error: 'define_failed' });
+    return res.status(502).json({ error: 'define_failed', detail: err.message });
   }
 }

@@ -18,7 +18,6 @@ export default function TranslationPanel({
   onLangChange,
   onAddCard,
   onDeeplRequest,
-  onDictRequest,
   define,
 }) {
   const [addingToDeck, setAddingToDeck] = useState(false);
@@ -28,7 +27,6 @@ export default function TranslationPanel({
   const [confirmed, setConfirmed] = useState(false);
   const [glosbeExpanded, setGlosbeExpanded] = useState(true);
   const [deeplExpanded, setDeeplExpanded] = useState(false);
-  const [dictExpanded, setDictExpanded] = useState(false);
 
   const wordCount = word ? word.trim().split(/\s+/).filter(Boolean).length : 0;
   const isShortSelection = wordCount <= 2;
@@ -41,7 +39,6 @@ export default function TranslationPanel({
     setExampleText(exampleSentence || '');
     setGlosbeExpanded(true);
     setDeeplExpanded(false);
-    setDictExpanded(false);
   }, [word, translations, exampleSentence]);
 
   function handleSave() {
@@ -56,13 +53,6 @@ export default function TranslationPanel({
       onDeeplRequest();
     }
     setDeeplExpanded((e) => !e);
-  }
-
-  function handleDictRowTap() {
-    if (!dictExpanded && dictionary.word === null && !dictionary.loading && !dictionary.error) {
-      onDictRequest();
-    }
-    setDictExpanded((e) => !e);
   }
 
   function playAudio(url) {
@@ -167,17 +157,17 @@ export default function TranslationPanel({
               )
             )}
 
-            {/* DeepL on-demand row */}
-            <div className="source-row-wrapper">
+            {/* DeepL pill button */}
+            <div className="deepl-pill-wrapper">
               <button
-                className={`source-row${deeplExpanded ? ' source-row-open' : ''}`}
+                className={`deepl-pill${deeplExpanded ? ' deepl-pill-open' : ''}`}
                 onClick={handleDeeplRowTap}
               >
-                <span className="source-row-label">DeepL — translation</span>
-                <span className="source-row-chevron">{deeplExpanded ? '−' : '+'}</span>
+                <span className="deepl-pill-label">DeepL — translation</span>
+                <span className="deepl-pill-chevron">{deeplExpanded ? '−' : '+'}</span>
               </button>
               {deeplExpanded && (
-                <div className="source-row-result">
+                <div className="deepl-pill-result">
                   {deepl.loading ? (
                     <span className="define-loading" />
                   ) : deepl.error ? (
@@ -188,62 +178,6 @@ export default function TranslationPanel({
                 </div>
               )}
             </div>
-
-            {/* Free Dictionary on-demand row — English source only */}
-            {sourceLang === 'en' && (
-              <div className="source-row-wrapper">
-                <button
-                  className={`source-row${dictExpanded ? ' source-row-open' : ''}`}
-                  onClick={handleDictRowTap}
-                >
-                  <span className="source-row-label">Free Dictionary — definitions</span>
-                  <span className="source-row-chevron">{dictExpanded ? '−' : '+'}</span>
-                </button>
-                {dictExpanded && (
-                  <div className="source-row-result">
-                    {dictionary.loading ? (
-                      <span className="define-loading" />
-                    ) : dictionary.error === 'not_found' ? (
-                      <p className="dictionary-unavailable">No entry found.</p>
-                    ) : dictionary.error ? (
-                      <p className="dictionary-unavailable">Definitions unavailable just now.</p>
-                    ) : dictionary.word ? (
-                      <>
-                        {(dictionary.phonetic || dictionary.audio) && (
-                          <div className="dictionary-phonetic-row">
-                            {dictionary.phonetic && (
-                              <span className="dictionary-phonetic">{dictionary.phonetic}</span>
-                            )}
-                            {dictionary.audio && (
-                              <button
-                                className="dictionary-audio-btn"
-                                onClick={() => playAudio(dictionary.audio)}
-                                aria-label="Play pronunciation"
-                              >
-                                <Volume2 size={13} />
-                              </button>
-                            )}
-                          </div>
-                        )}
-                        {(dictionary.meanings || []).map((meaning, i) => (
-                          <div key={i} className="dictionary-meaning">
-                            <p className="dictionary-pos">{meaning.partOfSpeech}</p>
-                            {meaning.definitions.map((def, j) => (
-                              <div key={j} className="dictionary-def-item">
-                                <p className="dictionary-definition">{def.definition}</p>
-                                {def.example && (
-                                  <p className="dictionary-example">{def.example}</p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                      </>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            )}
           </>
         ) : (
           /* 3+ word path: DeepL is the primary response */
@@ -254,6 +188,52 @@ export default function TranslationPanel({
               <p className="deepl-fallback">Translation unavailable just now.</p>
             ) : deepl.translation ? (
               <p className="deepl-translation" dir="auto">{deepl.translation}</p>
+            ) : null}
+          </div>
+        )}
+
+        {/* Free Dictionary — auto-displayed for English source, both paths */}
+        {sourceLang === 'en' && (dictionary.loading || dictionary.word || dictionary.error) && (
+          <div className="dictionary-section">
+            <hr className="dictionary-divider" />
+            {dictionary.loading ? (
+              <span className="define-loading" />
+            ) : dictionary.error === 'not_found' ? (
+              <p className="dictionary-unavailable">No entry found.</p>
+            ) : dictionary.error ? (
+              <p className="dictionary-unavailable">Definitions unavailable just now.</p>
+            ) : dictionary.word ? (
+              <>
+                {(dictionary.phonetic || dictionary.audio) && (
+                  <div className="dictionary-phonetic-row">
+                    {dictionary.phonetic && (
+                      <span className="dictionary-phonetic">{dictionary.phonetic}</span>
+                    )}
+                    {dictionary.audio && (
+                      <button
+                        className="dictionary-audio-btn"
+                        onClick={() => playAudio(dictionary.audio)}
+                        aria-label="Play pronunciation"
+                      >
+                        <Volume2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                )}
+                {(dictionary.meanings || []).map((meaning, i) => (
+                  <div key={i} className="dictionary-meaning">
+                    <p className="dictionary-pos">{meaning.partOfSpeech}</p>
+                    {meaning.definitions.map((def, j) => (
+                      <div key={j} className="dictionary-def-item">
+                        <p className="dictionary-definition">{def.definition}</p>
+                        {def.example && (
+                          <p className="dictionary-example">{def.example}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </>
             ) : null}
           </div>
         )}

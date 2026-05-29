@@ -298,7 +298,7 @@ export default function ReadingPane({
       setTranslationResult({ translations: [], examples: [], loading: false });
       setDeeplResult({ sentence: null, translation: null, loading: false, error: null });
       setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
-      setDictionaryQuery(null);
+      setDictionaryQuery(sourceLang === 'en' ? query : null);
       setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
 
       if (wordCount <= 2) {
@@ -488,7 +488,6 @@ export default function ReadingPane({
           exampleSentence={translationExample}
           deepl={deeplResult}
           onDeeplRequest={() => setDeeplQuery(translationExample || translationQuery)}
-          onDictRequest={() => setDictionaryQuery(translationQuery)}
           onClose={() => setTranslationQuery(null)}
           onLangChange={(targetLang) => onUpdateTranslationLanguage(sourceLang, targetLang)}
           dictionary={dictionaryResult}

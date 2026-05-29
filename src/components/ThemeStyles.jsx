@@ -1438,41 +1438,43 @@ export default function ThemeStyles() {
         color: var(--terracotta);
       }
 
-      /* ─── On-demand source rows (DeepL, Free Dictionary) ────────── */
-      .source-row-wrapper {
-        margin-top: 0.4rem;
+      /* ─── DeepL pill button (1–2 word path) ────────────────────── */
+      .deepl-pill-wrapper {
+        margin-top: 0.55rem;
+        margin-bottom: 0.15rem;
       }
-      .source-row {
-        display: flex;
+      .deepl-pill {
+        display: inline-flex;
         align-items: center;
-        justify-content: space-between;
-        width: 100%;
+        gap: 0.45rem;
+        padding: 0.28rem 0.75rem;
+        border: 1px solid var(--terracotta);
+        border-radius: 999px;
         background: transparent;
-        border: none;
-        border-top: 1px solid var(--rule-soft);
-        padding: 0.45rem 0;
-        cursor: pointer;
-        text-align: left;
-        color: var(--ink-faint);
-        transition: color 0.12s;
-      }
-      .source-row:hover,
-      .source-row.source-row-open {
         color: var(--terracotta);
-      }
-      .source-row-label {
         font-family: 'DM Mono', ui-monospace, monospace;
         font-size: 0.63rem;
         letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: background 0.15s ease;
         line-height: 1;
       }
-      .source-row-chevron {
+      .deepl-pill:hover {
+        background: rgba(164, 71, 38, 0.07);
+      }
+      .deepl-pill:active {
+        background: rgba(164, 71, 38, 0.14);
+      }
+      .deepl-pill.deepl-pill-open {
+        background: rgba(164, 71, 38, 0.05);
+      }
+      .deepl-pill-chevron {
         font-family: 'DM Mono', ui-monospace, monospace;
         font-size: 0.65rem;
         line-height: 1;
         flex-shrink: 0;
       }
-      .source-row-result {
+      .deepl-pill-result {
         padding: 0.35rem 0 0.45rem;
       }
 
