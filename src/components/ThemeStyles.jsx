@@ -1412,6 +1412,75 @@ export default function ThemeStyles() {
         margin: 0.6rem 0 0.65rem;
       }
 
+      /* ─── Glosbe toggle divider ─────────────────────────────────── */
+      .define-glosbe-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0.65rem 0 0.7rem;
+        cursor: pointer;
+        user-select: none;
+        outline: none;
+      }
+      .define-glosbe-line {
+        flex: 1;
+        height: 1px;
+        background: var(--rule);
+      }
+      .define-glosbe-chevron {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.62rem;
+        color: var(--ink-faint);
+        line-height: 1;
+        transition: color 0.12s;
+      }
+      .define-glosbe-toggle:hover .define-glosbe-chevron {
+        color: var(--terracotta);
+      }
+
+      /* ─── On-demand source rows (DeepL, Free Dictionary) ────────── */
+      .source-row-wrapper {
+        margin-top: 0.4rem;
+      }
+      .source-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        background: transparent;
+        border: none;
+        border-top: 1px solid var(--rule-soft);
+        padding: 0.45rem 0;
+        cursor: pointer;
+        text-align: left;
+        color: var(--ink-faint);
+        transition: color 0.12s;
+      }
+      .source-row:hover,
+      .source-row.source-row-open {
+        color: var(--terracotta);
+      }
+      .source-row-label {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.63rem;
+        letter-spacing: 0.04em;
+        line-height: 1;
+      }
+      .source-row-chevron {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.65rem;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      .source-row-result {
+        padding: 0.35rem 0 0.45rem;
+      }
+
+      /* ─── DeepL primary result (3+ word selections) ─────────────── */
+      .deepl-primary {
+        padding: 0.15rem 0 0.1rem;
+      }
+
       @media (max-width: 900px) {
         .translation-panel { display: none; }
       }

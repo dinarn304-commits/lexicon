@@ -14,10 +14,11 @@ export default function TranslationPanel({
   exampleSentence,
   deepl,
   dictionary,
-  onTranslateSentence,
   onClose,
   onLangChange,
   onAddCard,
+  onDeeplRequest,
+  onDictRequest,
   define,
 }) {
   const [addingToDeck, setAddingToDeck] = useState(false);
@@ -25,7 +26,12 @@ export default function TranslationPanel({
   const [backText, setBackText] = useState('');
   const [exampleText, setExampleText] = useState('');
   const [confirmed, setConfirmed] = useState(false);
-  const [defsExpanded, setDefsExpanded] = useState(true);
+  const [glosbeExpanded, setGlosbeExpanded] = useState(true);
+  const [deeplExpanded, setDeeplExpanded] = useState(false);
+  const [dictExpanded, setDictExpanded] = useState(false);
+
+  const wordCount = word ? word.trim().split(/\s+/).filter(Boolean).length : 0;
+  const isShortSelection = wordCount <= 2;
 
   useEffect(() => {
     setAddingToDeck(false);
@@ -33,6 +39,9 @@ export default function TranslationPanel({
     setFrontText(word);
     setBackText(translations[0] || '');
     setExampleText(exampleSentence || '');
+    setGlosbeExpanded(true);
+    setDeeplExpanded(false);
+    setDictExpanded(false);
   }, [word, translations, exampleSentence]);
 
   function handleSave() {
@@ -42,17 +51,29 @@ export default function TranslationPanel({
     setTimeout(() => setConfirmed(false), 2000);
   }
 
-  const deeplActive = Boolean(deepl?.sentence);
+  function handleDeeplRowTap() {
+    if (!deeplExpanded && deepl.sentence === null) {
+      onDeeplRequest();
+    }
+    setDeeplExpanded((e) => !e);
+  }
 
-  const isMultiWord = word ? word.split(/\s+/).filter(Boolean).length > 1 : false;
-  const showDictionary = sourceLang === 'en'
-    && !isMultiWord
-    && dictionary?.error !== 'not_found'
-    && (dictionary?.loading || dictionary?.word !== null || dictionary?.error != null);
+  function handleDictRowTap() {
+    if (!dictExpanded && dictionary.word === null && !dictionary.loading && !dictionary.error) {
+      onDictRequest();
+    }
+    setDictExpanded((e) => !e);
+  }
 
   function playAudio(url) {
     try { new Audio(url).play(); } catch {}
   }
+
+  const defaultBack = isShortSelection
+    ? (define?.meaningBase || translations[0] || deepl?.translation || '')
+    : (deepl?.translation || '');
+
+  const showDefineSection = define && !define.error && (define.loading || (define.base && define.meaningBase));
 
   return createPortal(
     <div className="translation-panel">
@@ -78,125 +99,162 @@ export default function TranslationPanel({
       </div>
 
       <div className="translation-panel-body">
-        {define && (define.loading || (define.base && define.meaning)) && (
-          <div className="define-section">
-            <p className="define-label">· dictionary form ·</p>
-            {define.loading ? (
-              <span className="define-loading" />
-            ) : (
-              <>
-                <div className="define-form-line" dir="auto">
-                  {define.isInflected ? (
-                    <>
-                      <span className="define-input-word">{word}</span>
-                      <span className="define-arrow">→</span>
-                      <span className="define-base">{define.base}</span>
-                    </>
-                  ) : (
-                    <span className="define-base">{define.base}</span>
-                  )}
-                </div>
-                <p className="define-meaning" dir="auto">{define.meaning}</p>
-                {define.note && (
-                  <p className="define-note" dir="auto">{define.note}</p>
-                )}
-              </>
-            )}
-            <hr className="define-divider" />
-          </div>
-        )}
-        {loading ? (
-          <p className="translation-loading">looking up…</p>
-        ) : (
+        {isShortSelection ? (
           <>
-            {translations.length > 0 ? (
-              <>
-                <ul className="translation-list">
-                  {translations.map((t, i) => (
-                    <li key={i} className="translation-item" dir="auto">{t}</li>
-                  ))}
-                </ul>
-                {examples.length > 0 && (
-                  <div className="translation-examples">
-                    {examples.slice(0, 2).map((ex, i) => (
-                      <p key={i} className="translation-example">{ex}</p>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : !deeplActive ? (
-              <p className="translation-empty">no translation found</p>
-            ) : null}
-          </>
-        )}
-
-        {deeplActive && (
-          <div className="deepl-section">
-            <hr className="deepl-divider" />
-            <p className="deepl-label">sentence</p>
-            <p className="deepl-source">{deepl.sentence}</p>
-            {deepl.loading ? (
-              <p className="deepl-loading">· · ·</p>
-            ) : deepl.error ? (
-              <p className="deepl-fallback">Sentence translation unavailable just now.</p>
-            ) : (
-              <p className="deepl-translation" dir="auto">{deepl.translation}</p>
-            )}
-          </div>
-        )}
-
-        {!loading && translations.length > 0 && !deeplActive && (
-          <button className="translation-translate-sentence" onClick={onTranslateSentence}>
-            Translate sentence
-          </button>
-        )}
-
-        {showDictionary && (
-          <div className="dictionary-section">
-            <hr className="dictionary-divider" />
-            <div className="dictionary-label-row" onClick={() => setDefsExpanded(e => !e)}>
-              <span className="dictionary-label">definitions</span>
-              <span className="dictionary-toggle">{defsExpanded ? '−' : '+'}</span>
-            </div>
-            {defsExpanded && (
-              dictionary.loading ? (
-                <p className="deepl-loading">· · ·</p>
-              ) : dictionary.error ? (
-                <p className="dictionary-unavailable">Definitions unavailable just now.</p>
-              ) : (
-                <>
-                  {(dictionary.phonetic || dictionary.audio) && (
-                    <div className="dictionary-phonetic-row">
-                      {dictionary.phonetic && (
-                        <span className="dictionary-phonetic">{dictionary.phonetic}</span>
-                      )}
-                      {dictionary.audio && (
-                        <button
-                          className="dictionary-audio-btn"
-                          onClick={() => playAudio(dictionary.audio)}
-                          aria-label="Play pronunciation"
-                        >
-                          <Volume2 size={13} />
-                        </button>
+            {/* GPT define section */}
+            {showDefineSection && (
+              <div className="define-section">
+                <p className="define-label">· dictionary form ·</p>
+                {define.loading ? (
+                  <span className="define-loading" />
+                ) : (
+                  <>
+                    <div className="define-form-line" dir="auto">
+                      {define.isInflected ? (
+                        <>
+                          <span className="define-input-word">{word}</span>
+                          <span className="define-arrow">→</span>
+                          <span className="define-base">{define.base}</span>
+                        </>
+                      ) : (
+                        <span className="define-base">{define.base}</span>
                       )}
                     </div>
-                  )}
-                  {(dictionary.meanings || []).map((meaning, i) => (
-                    <div key={i} className="dictionary-meaning">
-                      <p className="dictionary-pos">{meaning.partOfSpeech}</p>
-                      {meaning.definitions.map((def, j) => (
-                        <div key={j} className="dictionary-def-item">
-                          <p className="dictionary-definition">{def.definition}</p>
-                          {def.example && (
-                            <p className="dictionary-example">{def.example}</p>
-                          )}
-                        </div>
+                    <p className="define-meaning" dir="auto">{define.meaningBase}</p>
+                    {define.noteTarget && (
+                      <p className="define-note" dir="auto">{define.noteTarget}</p>
+                    )}
+                    {define.noteTarget && define.noteSource && (
+                      <p className="define-note" dir="auto">{define.noteSource}</p>
+                    )}
+                  </>
+                )}
+                <div
+                  className="define-glosbe-toggle"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setGlosbeExpanded((e) => !e)}
+                  onKeyDown={(e) => e.key === 'Enter' && setGlosbeExpanded((v) => !v)}
+                >
+                  <span className="define-glosbe-line" />
+                  <span className="define-glosbe-chevron">{glosbeExpanded ? '−' : '+'}</span>
+                  <span className="define-glosbe-line" />
+                </div>
+              </div>
+            )}
+
+            {/* Glosbe section */}
+            {glosbeExpanded && (
+              loading ? (
+                <p className="translation-loading">looking up…</p>
+              ) : translations.length > 0 ? (
+                <>
+                  <ul className="translation-list">
+                    {translations.map((t, i) => (
+                      <li key={i} className="translation-item" dir="auto">{t}</li>
+                    ))}
+                  </ul>
+                  {examples.length > 0 && (
+                    <div className="translation-examples">
+                      {examples.slice(0, 2).map((ex, i) => (
+                        <p key={i} className="translation-example">{ex}</p>
                       ))}
                     </div>
-                  ))}
+                  )}
                 </>
+              ) : (
+                <p className="translation-empty">no translation found</p>
               )
             )}
+
+            {/* DeepL on-demand row */}
+            <div className="source-row-wrapper">
+              <button
+                className={`source-row${deeplExpanded ? ' source-row-open' : ''}`}
+                onClick={handleDeeplRowTap}
+              >
+                <span className="source-row-label">DeepL — translation</span>
+                <span className="source-row-chevron">{deeplExpanded ? '−' : '+'}</span>
+              </button>
+              {deeplExpanded && (
+                <div className="source-row-result">
+                  {deepl.loading ? (
+                    <span className="define-loading" />
+                  ) : deepl.error ? (
+                    <p className="deepl-fallback">Translation unavailable just now.</p>
+                  ) : deepl.translation ? (
+                    <p className="deepl-translation" dir="auto">{deepl.translation}</p>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
+            {/* Free Dictionary on-demand row — English source only */}
+            {sourceLang === 'en' && (
+              <div className="source-row-wrapper">
+                <button
+                  className={`source-row${dictExpanded ? ' source-row-open' : ''}`}
+                  onClick={handleDictRowTap}
+                >
+                  <span className="source-row-label">Free Dictionary — definitions</span>
+                  <span className="source-row-chevron">{dictExpanded ? '−' : '+'}</span>
+                </button>
+                {dictExpanded && (
+                  <div className="source-row-result">
+                    {dictionary.loading ? (
+                      <span className="define-loading" />
+                    ) : dictionary.error === 'not_found' ? (
+                      <p className="dictionary-unavailable">No entry found.</p>
+                    ) : dictionary.error ? (
+                      <p className="dictionary-unavailable">Definitions unavailable just now.</p>
+                    ) : dictionary.word ? (
+                      <>
+                        {(dictionary.phonetic || dictionary.audio) && (
+                          <div className="dictionary-phonetic-row">
+                            {dictionary.phonetic && (
+                              <span className="dictionary-phonetic">{dictionary.phonetic}</span>
+                            )}
+                            {dictionary.audio && (
+                              <button
+                                className="dictionary-audio-btn"
+                                onClick={() => playAudio(dictionary.audio)}
+                                aria-label="Play pronunciation"
+                              >
+                                <Volume2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {(dictionary.meanings || []).map((meaning, i) => (
+                          <div key={i} className="dictionary-meaning">
+                            <p className="dictionary-pos">{meaning.partOfSpeech}</p>
+                            {meaning.definitions.map((def, j) => (
+                              <div key={j} className="dictionary-def-item">
+                                <p className="dictionary-definition">{def.definition}</p>
+                                {def.example && (
+                                  <p className="dictionary-example">{def.example}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          /* 3+ word path: DeepL is the primary response */
+          <div className="deepl-primary">
+            {deepl.loading ? (
+              <span className="define-loading" />
+            ) : deepl.error ? (
+              <p className="deepl-fallback">Translation unavailable just now.</p>
+            ) : deepl.translation ? (
+              <p className="deepl-translation" dir="auto">{deepl.translation}</p>
+            ) : null}
           </div>
         )}
 
@@ -254,7 +312,11 @@ export default function TranslationPanel({
         ) : (
           <button
             className="translation-add-btn"
-            onClick={() => { setFrontText(define?.base || word); setBackText(define?.meaning || translations[0] || deepl?.translation || ''); setAddingToDeck(true); }}
+            onClick={() => {
+              setFrontText(define?.base || word);
+              setBackText(defaultBack);
+              setAddingToDeck(true);
+            }}
           >
             + Add to deck
           </button>

@@ -1,4 +1,4 @@
-const MODEL = 'gpt-4.1-nano'; // swap to 'gpt-5.4-mini' for richer output
+const MODEL = 'gpt-5.4-mini';
 
 const LANG_NAMES = {
   tr: 'Turkish', en: 'English', es: 'Spanish', ru: 'Russian',
@@ -47,21 +47,29 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: MODEL,
         temperature: 0.2,
-        max_tokens: 300,
+        max_tokens: 400,
         response_format: { type: 'json_object' },
         messages: [
           {
             role: 'system',
             content:
-              `You are a precise bilingual dictionary for language learners. ` +
-              `You receive a word or short phrase in ${sourceLanguage}, the sentence it appeared in, and a target language ${targetLanguage}. ` +
+              `You are a precise bilingual dictionary for language learners.\n` +
+              `You receive a word in ${sourceLanguage}, the sentence it appeared in, and a target language ${targetLanguage}.\n\n` +
+              `DICTIONARY FORM RULE: The dictionary form is the word with all INFLECTIONAL endings removed while the core lexical word is kept. ` +
+              `Remove: plural markers, possessive suffixes, case endings, and on verbs the tense/person/voice/mood endings. Give verbs as the infinitive. ` +
+              `Do NOT remove derivational parts that change the word's core meaning (e.g. keep the -çı in ihracatçı, which means "one who exports"). ` +
+              `Reduce ALL the way down — do not stop halfway. Use the surrounding sentence to choose the correct reading when a form is ambiguous.\n\n` +
+              `EXAMPLES: kaynaklardan → kaynak ; yakıtların → yakıt ; ihracatçısı → ihracatçı ; ` +
+              `veriliyor → vermek ; yapılmıştır → yapmak ; minnettarım → minnet ; ` +
+              `kahkahalar → kahkaha ; ölçekte → ölçek ; friends → friend ; did → do ; translating → translate\n\n` +
               `Return ONLY a JSON object with these keys:\n` +
-              `  base        — the dictionary/citation form of the word in ${sourceLanguage}: the infinitive for verbs, the nominative singular for nouns. If the input is a phrase of several words, set base to the phrase unchanged.\n` +
+              `  base        — the dictionary form in ${sourceLanguage} (verbs as infinitive); for an uninflected word, equal to the word itself.\n` +
               `  isInflected — true if base differs from the input word, else false.\n` +
-              `  meaning     — a concise meaning in ${targetLanguage}: at most a few senses, comma-separated. For a phrase, a fluent translation.\n` +
-              `  note        — a short, friendly grammatical note in ${targetLanguage} explaining the inflection (e.g. 'negative past tense — "did not run out"'). Empty string if not inflected or not useful.\n` +
-              `  example     — one very short example sentence in ${sourceLanguage} with its ${targetLanguage} translation, or empty string.\n` +
-              `No markdown, no backticks, no prose outside the JSON object.`,
+              `  meaningBase — concise meaning of the DICTIONARY FORM in ${targetLanguage}.\n` +
+              `  noteTarget  — a short grammatical note IN ${targetLanguage} explaining the inflection and, where useful, how the word functions in this particular sentence ` +
+              `(e.g. "plural with ablative case — here: \\"from sources\\""). Empty string if not inflected.\n` +
+              `  noteSource  — the same explanation written IN ${sourceLanguage}. Empty string if not inflected.\n` +
+              `Keep notes accurate and short. If unsure of the grammar, leave both notes empty rather than guess. No markdown, no backticks, only the JSON object.`,
           },
           {
             role: 'user',

@@ -182,14 +182,12 @@ export default function ReadingPane({
 
   const [deeplQuery, setDeeplQuery]   = useState(null);
   const [deeplResult, setDeeplResult] = useState({ sentence: null, translation: null, loading: false, error: null });
-  const deeplSentenceRef  = useRef('');
-  const isMultiWordRef    = useRef(false);
 
   const [dictionaryQuery, setDictionaryQuery]   = useState(null);
   const [dictionaryResult, setDictionaryResult] = useState({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
 
   const [defineQuery, setDefineQuery] = useState(null);
-  const [defineResult, setDefineResult] = useState({ base: null, isInflected: false, meaning: null, note: null, example: null, loading: false, error: null });
+  const [defineResult, setDefineResult] = useState({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
 
   const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru' };
 
@@ -199,6 +197,7 @@ export default function ReadingPane({
 
   useEffect(() => {
     if (!translationQuery) return;
+    if (translationQuery.trim().split(/\s+/).filter(Boolean).length > 2) return;
     setTranslationResult({ translations: [], examples: [], loading: true });
     fetch(`/api/glosbe?word=${encodeURIComponent(translationQuery)}&lang=${translationLang}&sourceLang=${sourceLang}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
@@ -206,9 +205,6 @@ export default function ReadingPane({
         const translations = json.translations || [];
         const examples = json.examples || [];
         setTranslationResult({ translations, examples, loading: false });
-        if (!isMultiWordRef.current && translations.length === 0) {
-          setDeeplQuery(deeplSentenceRef.current || translationQuery);
-        }
       })
       .catch(() => setTranslationResult({ translations: [], examples: [], loading: false }));
   }, [translationQuery, translationLang]);
@@ -251,7 +247,7 @@ export default function ReadingPane({
 
   useEffect(() => {
     if (!defineQuery) return;
-    setDefineResult({ base: null, isInflected: false, meaning: null, note: null, example: null, loading: true, error: null });
+    setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: true, error: null });
     fetch('/api/define', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -260,12 +256,12 @@ export default function ReadingPane({
       .then((r) => r.json())
       .then((json) => {
         if (json.error) {
-          setDefineResult({ base: null, isInflected: false, meaning: null, note: null, example: null, loading: false, error: json.error });
+          setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: json.error });
         } else {
           setDefineResult({ ...json, loading: false, error: null });
         }
       })
-      .catch(() => setDefineResult({ base: null, isInflected: false, meaning: null, note: null, example: null, loading: false, error: 'define_failed' }));
+      .catch(() => setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: 'define_failed' }));
   }, [defineQuery, translationLang]);
 
   function handleMouseUp(e) {
@@ -294,34 +290,25 @@ export default function ReadingPane({
     }
 
     if (query) {
-      const multi = query.split(/\s+/).filter(Boolean).length > 1;
-      isMultiWordRef.current = multi;
-      deeplSentenceRef.current = multi ? query : findSentence(paraText, query);
+      const wordCount = query.split(/\s+/).filter(Boolean).length;
+      const contextSentence = findSentence(paraText, query);
 
       setTranslationQuery(query);
-      setTranslationExample(findSentence(paraText, query));
+      setTranslationExample(contextSentence);
+      setTranslationResult({ translations: [], examples: [], loading: false });
       setDeeplResult({ sentence: null, translation: null, loading: false, error: null });
-
-      if (multi) {
-        setDeeplQuery(query);
-      } else {
-        setDeeplQuery(null);
-      }
-
       setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
-      if (sourceLang === 'en' && !multi) {
-        setDictionaryQuery(query);
+      setDictionaryQuery(null);
+      setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
+
+      if (wordCount <= 2) {
+        setDeeplQuery(null);
+        setDefineQuery({ word: query, sentence: contextSentence });
       } else {
-        setDictionaryQuery(null);
+        setDeeplQuery(query);
+        setDefineQuery(null);
       }
-
-      setDefineResult({ base: null, isInflected: false, meaning: null, note: null, example: null, loading: false, error: null });
-      setDefineQuery({ word: query, sentence: findSentence(paraText, query) });
     }
-  }
-
-  function handleTranslateSentence() {
-    setDeeplQuery(deeplSentenceRef.current || translationQuery);
   }
 
   function renderBlock(node, index) {
@@ -500,7 +487,8 @@ export default function ReadingPane({
           loading={translationResult.loading}
           exampleSentence={translationExample}
           deepl={deeplResult}
-          onTranslateSentence={handleTranslateSentence}
+          onDeeplRequest={() => setDeeplQuery(translationExample || translationQuery)}
+          onDictRequest={() => setDictionaryQuery(translationQuery)}
           onClose={() => setTranslationQuery(null)}
           onLangChange={(targetLang) => onUpdateTranslationLanguage(sourceLang, targetLang)}
           dictionary={dictionaryResult}
