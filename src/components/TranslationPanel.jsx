@@ -96,7 +96,7 @@ export default function TranslationPanel({
               <div className="define-section">
                 <p className="define-label">· dictionary form ·</p>
                 {define.loading ? (
-                  <span className="define-loading" />
+                  <div className="define-progress-bar" />
                 ) : (
                   <>
                     <div className="define-form-line" dir="auto">
@@ -111,11 +111,11 @@ export default function TranslationPanel({
                       )}
                     </div>
                     <p className="define-meaning" dir="auto">{define.meaningBase}</p>
-                    {define.noteTarget && (
-                      <p className="define-note" dir="auto">{define.noteTarget}</p>
-                    )}
-                    {define.noteTarget && define.noteSource && (
+                    {define.noteSource && (
                       <p className="define-note" dir="auto">{define.noteSource}</p>
+                    )}
+                    {define.noteSource && define.noteTarget && (
+                      <p className="define-note" dir="auto">{define.noteTarget}</p>
                     )}
                   </>
                 )}
@@ -176,6 +176,9 @@ export default function TranslationPanel({
                     <p className="deepl-translation" dir="auto">{deepl.translation}</p>
                   ) : null}
                 </div>
+              )}
+              {!deeplExpanded && (
+                <p className="deepl-pill-caption">for when you need the whole sentence translated</p>
               )}
             </div>
           </>

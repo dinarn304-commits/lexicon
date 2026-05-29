@@ -1406,6 +1406,31 @@ export default function ThemeStyles() {
         animation: deepl-pulse 1.4s ease-in-out infinite;
         margin: 0.45rem 0 0.5rem;
       }
+      @keyframes define-scan {
+        0%   { transform: translateX(-100%); }
+        50%  { transform: translateX(333%); }
+        100% { transform: translateX(-100%); }
+      }
+      .define-progress-bar {
+        position: relative;
+        width: 100%;
+        height: 3px;
+        background: rgba(164, 71, 38, 0.10);
+        border-radius: 999px;
+        overflow: hidden;
+        margin: 0.45rem 0 0.5rem;
+      }
+      .define-progress-bar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 30%;
+        height: 100%;
+        background: var(--terracotta);
+        border-radius: 999px;
+        animation: define-scan 2s ease-in-out infinite;
+      }
       .define-divider {
         border: none;
         border-top: 1px solid var(--rule);
@@ -1442,18 +1467,22 @@ export default function ThemeStyles() {
       .deepl-pill-wrapper {
         margin-top: 0.55rem;
         margin-bottom: 0.15rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
       }
       .deepl-pill {
         display: inline-flex;
         align-items: center;
         gap: 0.45rem;
-        padding: 0.28rem 0.75rem;
+        padding: 0.32rem 1.1rem;
         border: 1px solid var(--terracotta);
         border-radius: 999px;
         background: transparent;
         color: var(--terracotta);
         font-family: 'DM Mono', ui-monospace, monospace;
-        font-size: 0.63rem;
+        font-size: 0.73rem;
+        font-weight: 600;
         letter-spacing: 0.04em;
         cursor: pointer;
         transition: background 0.15s ease;
@@ -1476,6 +1505,17 @@ export default function ThemeStyles() {
       }
       .deepl-pill-result {
         padding: 0.35rem 0 0.45rem;
+        width: 100%;
+      }
+      .deepl-pill-caption {
+        font-family: 'Fraunces', serif;
+        font-size: 0.9rem;
+        font-style: italic;
+        color: var(--ink-soft);
+        text-align: center;
+        margin: 0.35rem 0 0;
+        padding: 0;
+        line-height: 1.4;
       }
 
       /* ─── DeepL primary result (3+ word selections) ─────────────── */
