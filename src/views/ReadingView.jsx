@@ -35,13 +35,22 @@ export default function ReadingView({
       </div>
 
       {texts.length === 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10vh' }}>
-          <p className="text-lg italic" style={{ color: 'var(--ink-soft)', textAlign: 'center' }}>
-            A blank page. Begin by importing your first text.
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '10vh', gap: '1.5rem' }}>
+          <p style={{
+            fontFamily: "'Fraunces', Georgia, serif",
+            fontStyle: 'italic',
+            fontSize: '18px',
+            color: 'var(--ink-soft)',
+            lineHeight: 1.7,
+            textAlign: 'center',
+            maxWidth: '26rem',
+            margin: 0,
+          }}>
+            Your library is empty for now — save your first text and it will appear here.
           </p>
           <button
-            className="btn btn-quiet text-sm flex items-center gap-1.5"
-            style={{ marginTop: '1rem' }}
+            className="btn btn-quiet"
+            style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
             onClick={() => setImportOpen(true)}
           >
             <Plus size={14} /> New text

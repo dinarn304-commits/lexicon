@@ -772,10 +772,20 @@ export default function ThemeStyles() {
         border-color: var(--ink-soft);
         box-shadow: 0 2px 0 rgba(42,31,21,0.07), 0 16px 32px -14px rgba(42,31,21,0.24);
       }
+      .text-card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .text-card-header-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+        flex-shrink: 0;
+      }
       .text-card-delete {
-        position: absolute;
-        top: 10px;
-        right: 10px;
         background: none;
         border: none;
         color: var(--ink-faint);
@@ -787,14 +797,15 @@ export default function ThemeStyles() {
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0;
       }
       .text-card-delete:hover { color: var(--terracotta); }
       .text-card-title-row {
         display: flex;
         align-items: baseline;
         gap: 8px;
-        margin: 0 0 8px;
-        padding-right: 24px;
+        flex: 1;
+        min-width: 0;
         flex-wrap: wrap;
       }
       .text-card-title {
@@ -842,6 +853,34 @@ export default function ThemeStyles() {
         margin: 0;
         line-height: 1.65;
       }
+      .text-card-progress {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 140px;
+      }
+      .text-card-progress-track {
+        flex: 1;
+        height: 3px;
+        background: var(--rule-soft);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .text-card-progress-fill {
+        height: 100%;
+        background: var(--terracotta);
+        border-radius: 999px;
+        transition: width 0.3s ease;
+      }
+      .text-card-progress-label {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 10px;
+        color: var(--ink-faint);
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+
       .text-card-meta {
         font-family: 'DM Mono', ui-monospace, monospace;
         font-size: 11px;

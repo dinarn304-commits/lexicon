@@ -173,10 +173,10 @@ export default function SharedTextView({
   const [translationResult, setTranslationResult] = useState({ translations: [], examples: [], loading: false });
   const [deeplQuery, setDeeplQuery]   = useState(null);
   const [deeplResult, setDeeplResult] = useState({ sentence: null, translation: null, loading: false, error: null });
-  const deeplSentenceRef  = useRef('');
-  const isMultiWordRef    = useRef(false);
   const [dictionaryQuery, setDictionaryQuery]   = useState(null);
   const [dictionaryResult, setDictionaryResult] = useState({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
+  const [defineQuery, setDefineQuery] = useState(null);
+  const [defineResult, setDefineResult] = useState({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
 
   const sourceLang = shareData?.sourceLanguage || 'tr';
   const translationLang = data.translationLanguagesBySource?.[sourceLang] ?? TRANSLATION_DEFAULTS[sourceLang] ?? 'ru';
@@ -184,6 +184,7 @@ export default function SharedTextView({
 
   useEffect(() => {
     if (!translationQuery) return;
+    if (translationQuery.trim().split(/\s+/).filter(Boolean).length > 2) return;
     setTranslationResult({ translations: [], examples: [], loading: true });
     fetch(`/api/glosbe?word=${encodeURIComponent(translationQuery)}&lang=${translationLang}&sourceLang=${sourceLang}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
@@ -191,9 +192,6 @@ export default function SharedTextView({
         const translations = json.translations || [];
         const examples = json.examples || [];
         setTranslationResult({ translations, examples, loading: false });
-        if (!isMultiWordRef.current && translations.length === 0) {
-          setDeeplQuery(deeplSentenceRef.current || translationQuery);
-        }
       })
       .catch(() => setTranslationResult({ translations: [], examples: [], loading: false }));
   }, [translationQuery, translationLang]);
@@ -234,11 +232,32 @@ export default function SharedTextView({
       .catch(() => setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: 'dictionary_unavailable' }));
   }, [dictionaryQuery]);
 
+  useEffect(() => {
+    if (!defineQuery) return;
+    setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: true, error: null });
+    fetch('/api/define', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: defineQuery.word, sentence: defineQuery.sentence, sourceLang, targetLang: translationLang }),
+    })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.error) {
+          setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: json.error });
+        } else {
+          setDefineResult({ ...json, loading: false, error: null });
+        }
+      })
+      .catch(() => setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: 'define_failed' }));
+  }, [defineQuery, translationLang]);
+
   function handleMouseUp(e) {
     if (window.innerWidth <= 900) return;
+
     const sel = window.getSelection();
     let query = '';
     let paraText = '';
+
     if (sel && !sel.isCollapsed) {
       const selected = sel.toString().trim();
       if (selected && bodyRef.current?.contains(sel.anchorNode)) {
@@ -251,32 +270,32 @@ export default function SharedTextView({
       if (wordEl && bodyRef.current?.contains(wordEl)) {
         query = (wordEl.textContent || '').replace(/[,.!?;:'")\]…]+$/, '').trim();
         const paraEl = wordEl.closest('[data-paragraph-index]');
-        paraText = paraEl?.textContent?.trim() || wordEl.closest('h1')?.textContent?.trim() || '';
+        paraText = paraEl?.textContent?.trim()
+          || wordEl.closest('h1')?.textContent?.trim()
+          || '';
       }
     }
-    if (query) {
-      const multi = query.split(/\s+/).filter(Boolean).length > 1;
-      isMultiWordRef.current = multi;
-      deeplSentenceRef.current = multi ? query : findSentence(paraText, query);
-      setTranslationQuery(query);
-      setTranslationExample(findSentence(paraText, query));
-      setDeeplResult({ sentence: null, translation: null, loading: false, error: null });
-      if (multi) {
-        setDeeplQuery(query);
-      } else {
-        setDeeplQuery(null);
-      }
-      setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
-      if (sourceLang === 'en' && !multi) {
-        setDictionaryQuery(query);
-      } else {
-        setDictionaryQuery(null);
-      }
-    }
-  }
 
-  function handleTranslateSentence() {
-    setDeeplQuery(deeplSentenceRef.current || translationQuery);
+    if (query) {
+      const wordCount = query.split(/\s+/).filter(Boolean).length;
+      const contextSentence = findSentence(paraText, query);
+
+      setTranslationQuery(query);
+      setTranslationExample(contextSentence);
+      setTranslationResult({ translations: [], examples: [], loading: false });
+      setDeeplResult({ sentence: null, translation: null, loading: false, error: null });
+      setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
+      setDictionaryQuery(sourceLang === 'en' ? query : null);
+      setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
+
+      if (wordCount <= 2) {
+        setDeeplQuery(null);
+        setDefineQuery({ word: query, sentence: contextSentence });
+      } else {
+        setDeeplQuery(query);
+        setDefineQuery(null);
+      }
+    }
   }
 
   const images = shareData?.images || {};
@@ -441,13 +460,16 @@ export default function SharedTextView({
   return (
     <div className="reading-pane fade-up">
       <div className="reading-pane-header">
-        <button
-          className={`shared-view-save-btn${saved ? ' saved' : ''}`}
-          onClick={handleSave}
-          disabled={saved}
-        >
-          {saved ? 'saved ✓' : 'save this text to my library'}
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <Link className="guide-back-btn" to="/reading">← Back to library</Link>
+          <button
+            className={`shared-view-save-btn${saved ? ' saved' : ''}`}
+            onClick={handleSave}
+            disabled={saved}
+          >
+            {saved ? 'saved ✓' : 'save this text to my library'}
+          </button>
+        </div>
         <div className="reading-pane-header-right">
           <div className="reading-controls-row">
             <ReadingControl
@@ -523,10 +545,11 @@ export default function SharedTextView({
           loading={translationResult.loading}
           exampleSentence={translationExample}
           deepl={deeplResult}
-          onTranslateSentence={handleTranslateSentence}
+          onDeeplRequest={() => setDeeplQuery(translationExample || translationQuery)}
           onClose={() => setTranslationQuery(null)}
           onLangChange={(targetLang) => onUpdateTranslationLanguage(sourceLang, targetLang)}
           dictionary={dictionaryResult}
+          define={defineResult}
           onAddCard={(front, back, example) => {
             const deckId = data.discoveredWordsDecks?.[sourceLang] ?? 'deck-discovered-words';
             const card = makeCard(deckId, front, back, example);
