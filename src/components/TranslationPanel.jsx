@@ -66,10 +66,15 @@ export default function TranslationPanel({
   const showDefineSection = define && !define.error && (define.loading || (define.base && define.meaningBase));
 
   return createPortal(
-    <div className="translation-panel">
-      <button className="translation-panel-close" onClick={onClose} aria-label="Close">
-        ×
-      </button>
+    <>
+      <div className="translation-backdrop" onClick={onClose} />
+      <div className="translation-panel">
+        <div className="translation-panel-handle" aria-hidden="true">
+          <div className="translation-panel-handle-bar" />
+        </div>
+        <button className="translation-panel-close" onClick={onClose} aria-label="Close">
+          ×
+        </button>
 
       <div className="translation-panel-header">
         <h3 className="translation-panel-word">{word}</h3>
@@ -305,7 +310,8 @@ export default function TranslationPanel({
           </button>
         )}
       </div>
-    </div>,
+      </div>
+    </>,
     document.body
   );
 }

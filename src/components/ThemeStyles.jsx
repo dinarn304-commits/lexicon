@@ -641,6 +641,7 @@ export default function ThemeStyles() {
         cursor: pointer;
         padding: 0;
         transition: color 0.18s ease;
+        white-space: nowrap;
       }
       .guide-back-btn:hover { color: var(--ink); }
       .guide-logo-unit {
@@ -904,6 +905,8 @@ export default function ThemeStyles() {
         justify-content: space-between;
         align-items: flex-start;
         margin-bottom: 56px;
+        flex-wrap: wrap;
+        gap: 12px;
       }
       .reading-pane-header-right {
         display: flex;
@@ -914,6 +917,7 @@ export default function ThemeStyles() {
       .reading-controls-row {
         display: flex;
         gap: 10px;
+        flex-wrap: wrap;
       }
       .reading-control {
         display: inline-flex;
@@ -1024,6 +1028,7 @@ export default function ThemeStyles() {
         cursor: pointer;
         border-radius: 2px;
         transition: background-color 0.12s ease;
+        -webkit-touch-callout: none;
       }
       .reading-word:hover {
         background-color: rgba(164, 71, 38, 0.12);
@@ -1562,8 +1567,47 @@ export default function ThemeStyles() {
         padding: 0.15rem 0 0.1rem;
       }
 
+      /* ─── Translation backdrop + drag handle (mobile only) ────── */
+      .translation-backdrop { display: none; }
+      .translation-panel-handle { display: none; }
+      .translation-panel-handle-bar {
+        width: 32px;
+        height: 3px;
+        background: var(--rule);
+        border-radius: 2px;
+      }
+
       @media (max-width: 900px) {
-        .translation-panel { display: none; }
+        .translation-panel {
+          top: auto;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          max-width: none;
+          max-height: 75vh;
+          border-radius: 12px 12px 0 0;
+          border: none;
+          border-top: 2px solid var(--terracotta-soft);
+          animation: sheetUp 0.22s ease both;
+        }
+        @keyframes sheetUp {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
+        }
+        .translation-backdrop {
+          display: block;
+          position: fixed;
+          inset: 0;
+          background: rgba(42, 31, 21, 0.30);
+          z-index: 99;
+        }
+        .translation-panel-handle {
+          display: flex;
+          justify-content: center;
+          padding: 8px 0 2px;
+          flex-shrink: 0;
+        }
       }
 
       /* ─── URL import ────────────────────────────────────────────── */

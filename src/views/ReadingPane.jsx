@@ -194,6 +194,8 @@ export default function ReadingPane({
   const sourceLang = text?.sourceLanguage || 'tr';
   const translationLang = data.translationLanguagesBySource?.[sourceLang] ?? TRANSLATION_DEFAULTS[sourceLang] ?? 'ru';
   const bodyRef = useRef(null);
+  const handledByTouchRef = useRef(false);
+  const touchStartRef = useRef(null);
 
   useEffect(() => {
     if (!translationQuery) return;
@@ -264,8 +266,32 @@ export default function ReadingPane({
       .catch(() => setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: 'define_failed' }));
   }, [defineQuery, translationLang]);
 
+  function handleQueryFound(query, paraText) {
+    const wordCount = query.split(/\s+/).filter(Boolean).length;
+    const contextSentence = findSentence(paraText, query);
+
+    setTranslationQuery(query);
+    setTranslationExample(contextSentence);
+    setTranslationResult({ translations: [], examples: [], loading: false });
+    setDeeplResult({ sentence: null, translation: null, loading: false, error: null });
+    setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
+    setDictionaryQuery(sourceLang === 'en' ? query : null);
+    setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
+
+    if (wordCount <= 2) {
+      setDeeplQuery(null);
+      setDefineQuery({ word: query, sentence: contextSentence });
+    } else {
+      setDeeplQuery(query);
+      setDefineQuery(null);
+    }
+  }
+
   function handleMouseUp(e) {
-    if (window.innerWidth <= 900) return;
+    if (handledByTouchRef.current) {
+      handledByTouchRef.current = false;
+      return;
+    }
 
     const sel = window.getSelection();
     let query = '';
@@ -289,24 +315,44 @@ export default function ReadingPane({
       }
     }
 
-    if (query) {
-      const wordCount = query.split(/\s+/).filter(Boolean).length;
-      const contextSentence = findSentence(paraText, query);
+    if (query) handleQueryFound(query, paraText);
+  }
 
-      setTranslationQuery(query);
-      setTranslationExample(contextSentence);
-      setTranslationResult({ translations: [], examples: [], loading: false });
-      setDeeplResult({ sentence: null, translation: null, loading: false, error: null });
-      setDictionaryResult({ word: null, phonetic: null, audio: null, meanings: [], loading: false, error: null });
-      setDictionaryQuery(sourceLang === 'en' ? query : null);
-      setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
+  function handleTouchStart(e) {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  }
 
-      if (wordCount <= 2) {
-        setDeeplQuery(null);
-        setDefineQuery({ word: query, sentence: contextSentence });
-      } else {
-        setDeeplQuery(query);
-        setDefineQuery(null);
+  function handleTouchEnd(e) {
+    const sel = window.getSelection();
+
+    if (sel && !sel.isCollapsed) {
+      const selected = sel.toString().trim();
+      if (selected && bodyRef.current?.contains(sel.anchorNode)) {
+        const paraEl = sel.anchorNode?.parentElement?.closest('[data-paragraph-index]');
+        const paraText = paraEl?.textContent?.trim() || '';
+        sel.removeAllRanges();
+        handledByTouchRef.current = true;
+        handleQueryFound(selected, paraText);
+      }
+      return;
+    }
+
+    const touch = e.changedTouches[0];
+    const start = touchStartRef.current;
+    if (start && (Math.abs(touch.clientY - start.y) > 12 || Math.abs(touch.clientX - start.x) > 12)) return;
+
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const wordEl = el?.closest('.reading-word');
+    if (wordEl && bodyRef.current?.contains(wordEl)) {
+      const query = (wordEl.textContent || '').replace(/[,.!?;:'")\]…]+$/, '').trim();
+      const paraEl = wordEl.closest('[data-paragraph-index]');
+      const paraText = paraEl?.textContent?.trim()
+        || wordEl.closest('h1')?.textContent?.trim()
+        || '';
+      if (query) {
+        handledByTouchRef.current = true;
+        handleQueryFound(query, paraText);
       }
     }
   }
@@ -453,6 +499,8 @@ export default function ReadingPane({
             : MARGIN_WIDTHS[prefs.marginWidth],
         }}
         onMouseUp={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         <h1 className="reading-pane-title">
           {text.title.split(/(\s+)/).map((part, i) =>
