@@ -343,6 +343,14 @@ export default function SharedTextView({
     touchStartRef.current = { x: t.clientX, y: t.clientY };
   }
 
+  function handleContextMenu(e) {
+    // Suppress iOS 16+ text-selection action menu (UIEditMenuInteraction fires
+    // contextmenu). Guard preserves desktop right-click (maxTouchPoints === 0).
+    if (navigator.maxTouchPoints > 0) {
+      e.preventDefault();
+    }
+  }
+
   function handleTouchEnd(e) {
     const sel = window.getSelection();
 
@@ -351,9 +359,29 @@ export default function SharedTextView({
       if (selected && bodyRef.current?.contains(sel.anchorNode)) {
         const paraEl = sel.anchorNode?.parentElement?.closest('[data-paragraph-index]');
         const paraText = paraEl?.textContent?.trim() || '';
+        // 1. Capture text (already in `selected`)
         sel.removeAllRanges();
+        // 2. Guard against iOS re-asserting the selection when the scroll-lock
+        //    effect applies body{position:fixed} after the panel mounts
+        const bodyEl = bodyRef.current;
+        if (bodyEl) {
+          bodyEl.style.webkitUserSelect = 'none';
+          bodyEl.style.userSelect = 'none';
+        }
         handledByTouchRef.current = true;
+        // 3. Suppress iOS UITextInteraction action menu (Copy/Look Up/Translate)
+        e.preventDefault();
         handleQueryFound(selected, paraText);
+        // 4. Restore after React commit + scroll-lock effect + iOS layout settle
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            window.getSelection()?.removeAllRanges();
+            if (bodyEl) {
+              bodyEl.style.webkitUserSelect = '';
+              bodyEl.style.userSelect = '';
+            }
+          });
+        });
       }
       return;
     }
@@ -592,6 +620,7 @@ export default function SharedTextView({
         onMouseUp={handleMouseUp}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onContextMenu={handleContextMenu}
       >
         <h1 className="reading-pane-title">
           {shareData.title.split(/(\s+)/).map((part, i) =>
