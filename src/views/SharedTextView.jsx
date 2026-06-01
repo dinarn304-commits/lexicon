@@ -9,6 +9,7 @@ import { makeId } from '../utils/id';
 
 const MARGIN_OPTIONS = ['narrow', 'normal', 'wide'];
 const MARGIN_WIDTHS  = { narrow: '28rem', normal: '36rem', wide: '48rem' };
+const MOBILE_BODY_PADDING = { narrow: '0 24px', normal: '0 8px', wide: '0' };
 const SPACING_OPTIONS = [1.1, 1.3, 1.5, 1.7, 1.9];
 const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru' };
 
@@ -106,6 +107,15 @@ export default function SharedTextView({
   }, [token]);
 
   const prefs = data.readingPreferences || { textSize: 18, marginWidth: 'normal', lineSpacing: 1.5 };
+
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 900px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)');
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const marginIdx  = MARGIN_OPTIONS.indexOf(prefs.marginWidth);
   const spacingIdx = SPACING_OPTIONS.indexOf(prefs.lineSpacing);
 
@@ -253,6 +263,26 @@ export default function SharedTextView({
       .catch(() => setDefineResult({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: 'define_failed' }));
   }, [defineQuery, translationLang]);
 
+  useEffect(() => {
+    if (translationQuery === null || !isMobile) return;
+    const scrollY = window.scrollY;
+    Object.assign(document.body.style, {
+      overflow: 'hidden',
+      position: 'fixed',
+      top: `-${scrollY}px`,
+      width: '100%',
+    });
+    return () => {
+      Object.assign(document.body.style, {
+        overflow: '',
+        position: '',
+        top: '',
+        width: '',
+      });
+      window.scrollTo(0, scrollY);
+    };
+  }, [translationQuery, isMobile]);
+
   function handleQueryFound(query, paraText) {
     const wordCount = query.split(/\s+/).filter(Boolean).length;
     const contextSentence = findSentence(paraText, query);
@@ -302,7 +332,10 @@ export default function SharedTextView({
       }
     }
 
-    if (query) handleQueryFound(query, paraText);
+    if (query) {
+      handleQueryFound(query, paraText);
+      window.getSelection()?.removeAllRanges();
+    }
   }
 
   function handleTouchStart(e) {
@@ -340,6 +373,7 @@ export default function SharedTextView({
       if (query) {
         handledByTouchRef.current = true;
         handleQueryFound(query, paraText);
+        window.getSelection()?.removeAllRanges();
       }
     }
   }
@@ -547,11 +581,14 @@ export default function SharedTextView({
       <div
         ref={bodyRef}
         className="reading-pane-body"
-        style={{
-          maxWidth: panelOpen
-            ? `min(${MARGIN_WIDTHS[prefs.marginWidth]}, calc(100vw - 26rem))`
-            : MARGIN_WIDTHS[prefs.marginWidth],
-        }}
+        style={isMobile
+          ? { padding: MOBILE_BODY_PADDING[prefs.marginWidth] }
+          : {
+              maxWidth: panelOpen
+                ? `min(${MARGIN_WIDTHS[prefs.marginWidth]}, calc(100vw - 26rem))`
+                : MARGIN_WIDTHS[prefs.marginWidth],
+            }
+        }
         onMouseUp={handleMouseUp}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}

@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { Volume2 } from 'lucide-react';
 
@@ -28,6 +28,21 @@ export default function TranslationPanel({
   const [glosbeExpanded, setGlosbeExpanded] = useState(true);
   const [deeplExpanded, setDeeplExpanded] = useState(false);
 
+  // ── Swipe-to-dismiss drag state ────────────────────────────────────────────
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  // mounted: false while the CSS entry animation is running (220ms), true after.
+  // When false we apply no inline style so the keyframe runs uncontested.
+  // When true we apply animation:none + inline transform so the drag can take over.
+  const [mounted, setMounted] = useState(false);
+  const panelRef = useRef(null);
+  const panelBodyRef = useRef(null);
+  const dragStartRef = useRef(null);
+  const dragYRef = useRef(0);
+  // Keep a ref to onClose so the non-passive native listener never captures a stale copy
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+
   const wordCount = word ? word.trim().split(/\s+/).filter(Boolean).length : 0;
   const isShortSelection = wordCount <= 2;
 
@@ -40,6 +55,30 @@ export default function TranslationPanel({
     setGlosbeExpanded(true);
     setDeeplExpanded(false);
   }, [word, translations, exampleSentence]);
+
+  // After the 220ms entry animation completes, hand control to inline transform.
+  // We wait 230ms (10ms margin) so the fill-mode holds before we cancel.
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 230);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Non-passive touchmove so we can preventDefault and stop body scroll while dragging.
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    function onMove(e) {
+      if (dragStartRef.current === null) return;
+      const dy = e.touches[0].clientY - dragStartRef.current;
+      if (dy > 0) {
+        e.preventDefault();
+        dragYRef.current = dy;
+        setDragY(dy);
+      }
+    }
+    el.addEventListener('touchmove', onMove, { passive: false });
+    return () => el.removeEventListener('touchmove', onMove);
+  }, []);
 
   function handleSave() {
     onAddCard(frontText.trim(), backText.trim(), exampleText.trim());
@@ -59,6 +98,32 @@ export default function TranslationPanel({
     try { new Audio(url).play(); } catch {}
   }
 
+  function handlePanelTouchStart(e) {
+    const bodyEl = panelBodyRef.current;
+    const atTop = !bodyEl || bodyEl.scrollTop === 0;
+    if (atTop) {
+      dragStartRef.current = e.touches[0].clientY;
+      dragYRef.current = 0;
+      setIsDragging(true);
+    }
+  }
+
+  function handlePanelTouchEnd() {
+    if (dragStartRef.current === null) return;
+    dragStartRef.current = null;
+    const dy = dragYRef.current;
+    dragYRef.current = 0;
+    if (dy > 80) {
+      onCloseRef.current();
+    } else {
+      // Two-step snap-back: first commit transition:ease, then in the next
+      // frame change the transform value — browser sees a value change with a
+      // transition in place and animates it correctly.
+      setIsDragging(false);
+      requestAnimationFrame(() => setDragY(0));
+    }
+  }
+
   const defaultBack = isShortSelection
     ? (define?.meaningBase || translations[0] || deepl?.translation || '')
     : (deepl?.translation || '');
@@ -68,7 +133,17 @@ export default function TranslationPanel({
   return createPortal(
     <>
       <div className="translation-backdrop" onClick={onClose} />
-      <div className="translation-panel">
+      <div
+        ref={panelRef}
+        className="translation-panel"
+        style={mounted ? {
+          animation: 'none',
+          transform: `translateY(${dragY}px)`,
+          transition: isDragging ? 'none' : 'transform 0.2s ease',
+        } : undefined}
+        onTouchStart={handlePanelTouchStart}
+        onTouchEnd={handlePanelTouchEnd}
+      >
         <div className="translation-panel-handle" aria-hidden="true">
           <div className="translation-panel-handle-bar" />
         </div>
@@ -93,7 +168,7 @@ export default function TranslationPanel({
         </div>
       </div>
 
-      <div className="translation-panel-body">
+      <div className="translation-panel-body" ref={panelBodyRef}>
         {isShortSelection ? (
           <>
             {/* GPT define section */}
