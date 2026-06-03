@@ -367,56 +367,56 @@ export default function ReadingPane({
   }
 
   function handleTouchEnd(e) {
+    // Capture query + paraText synchronously, but defer ALL selection/DOM/state
+    // mutation out of the touch gesture. Clearing the range, opening the panel
+    // (which triggers the position:fixed scroll-lock), and any style writes done
+    // synchronously inside touchend can wedge iOS WebKit's selection machinery —
+    // a deterministic, reload-requiring hard freeze on certain paragraphs. By
+    // letting touchend fully resolve before we touch anything, WebKit finishes
+    // its own selection transaction first. Desktop's mouseup path never does
+    // these mobile-only mutations, which is why it has always been freeze-free.
     const sel = window.getSelection();
+    let query = '';
+    let paraText = '';
 
     if (sel && !sel.isCollapsed) {
       const selected = sel.toString().trim();
       if (selected && bodyRef.current?.contains(sel.anchorNode)) {
         const paraEl = sel.anchorNode?.parentElement?.closest('[data-paragraph-index]');
-        const paraText = paraEl?.textContent?.trim() || '';
-        // 1. Capture text (already in `selected`)
-        sel.removeAllRanges();
-        // 2. Guard against iOS re-asserting the selection when the scroll-lock
-        //    effect applies body{position:fixed} after the panel mounts
-        const bodyEl = bodyRef.current;
-        if (bodyEl) {
-          bodyEl.style.webkitUserSelect = 'none';
-          bodyEl.style.userSelect = 'none';
-        }
-        handledByTouchRef.current = true;
-        handleQueryFound(selected, paraText);
-        // 4. Restore after React commit + scroll-lock effect + iOS layout settle
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            window.getSelection()?.removeAllRanges();
-            if (bodyEl) {
-              bodyEl.style.webkitUserSelect = '';
-              bodyEl.style.userSelect = '';
-            }
-          });
-        });
+        query = selected;
+        paraText = paraEl?.textContent?.trim() || '';
       }
-      return;
+    } else {
+      const touch = e.changedTouches[0];
+      const start = touchStartRef.current;
+      if (start && (Math.abs(touch.clientY - start.y) > 12 || Math.abs(touch.clientX - start.x) > 12)) return;
+
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const wordEl = el?.closest('.reading-word');
+      if (wordEl && bodyRef.current?.contains(wordEl)) {
+        query = (wordEl.textContent || '').replace(/[,.!?;:'")\]…]+$/, '').trim();
+        const paraEl = wordEl.closest('[data-paragraph-index]');
+        paraText = paraEl?.textContent?.trim()
+          || wordEl.closest('h1')?.textContent?.trim()
+          || '';
+      }
     }
 
-    const touch = e.changedTouches[0];
-    const start = touchStartRef.current;
-    if (start && (Math.abs(touch.clientY - start.y) > 12 || Math.abs(touch.clientX - start.x) > 12)) return;
+    if (!query) return;
 
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    const wordEl = el?.closest('.reading-word');
-    if (wordEl && bodyRef.current?.contains(wordEl)) {
-      const query = (wordEl.textContent || '').replace(/[,.!?;:'")\]…]+$/, '').trim();
-      const paraEl = wordEl.closest('[data-paragraph-index]');
-      const paraText = paraEl?.textContent?.trim()
-        || wordEl.closest('h1')?.textContent?.trim()
-        || '';
-      if (query) {
-        handledByTouchRef.current = true;
-        handleQueryFound(query, paraText);
+    // Suppress the synthetic mouseup that follows touchend (must be synchronous).
+    handledByTouchRef.current = true;
+
+    // Defer the mutating work until after the gesture has fully resolved.
+    setTimeout(() => {
+      try {
         window.getSelection()?.removeAllRanges();
+        handleQueryFound(query, paraText);
+      } catch (err) {
+        // Breadcrumb: if a freeze recurs, this surfaces the failing operation.
+        console.error('[reading] touch query failed', err);
       }
-    }
+    }, 0);
   }
 
   function renderBlock(node, index) {
