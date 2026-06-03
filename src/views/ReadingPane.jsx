@@ -384,8 +384,6 @@ export default function ReadingPane({
           bodyEl.style.userSelect = 'none';
         }
         handledByTouchRef.current = true;
-        // 3. Suppress iOS UITextInteraction action menu (Copy/Look Up/Translate)
-        e.preventDefault();
         handleQueryFound(selected, paraText);
         // 4. Restore after React commit + scroll-lock effect + iOS layout settle
         requestAnimationFrame(() => {
