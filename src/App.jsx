@@ -2,9 +2,11 @@ import { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { Routes, Route, Navigate, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { applyRating, migrateCard } from './algorithm/scheduler';
 import { loadAppData, saveAppData } from './storage/storage';
-import { removeCardImage } from './storage/images';
+import { removeCardImage, saveCardImage } from './storage/images';
+import { deserializeIntoDeck } from './storage/transfer';
 import { checkStorageHealth, requestPersistentStorage } from './storage/persistence';
 import { createSampleData } from './utils/card';
+import { makeId } from './utils/id';
 import { getLanguageMeta } from './utils/language';
 import { slugify, ensureUniqueSlug } from './utils/slug';
 import ThemeStyles from './components/ThemeStyles';
@@ -264,6 +266,53 @@ export default function App() {
     persist({ ...data, decks: newDecks });
   }
 
+  // Pure-append import: deserialized cards keep their full SRS state; only id and
+  // deckId are reassigned (in deserializeIntoDeck). Images are re-keyed to the new
+  // card ids and written separately. Returns a summary for the import UI.
+  async function importCards(file, destination) {
+    let newDeck = null;
+    let destinationDeckId;
+    let deckName;
+
+    if (destination.kind === 'new') {
+      const existingSlugs = new Set(data.decks.map((d) => d.slug).filter(Boolean));
+      const slug = ensureUniqueSlug(slugify(destination.name), existingSlugs);
+      destinationDeckId = makeId();
+      deckName = destination.name;
+      newDeck = {
+        id: destinationDeckId,
+        name: destination.name,
+        slug,
+        description: destination.description || '',
+        language: destination.language || '',
+        createdAt: new Date().toISOString(),
+      };
+    } else {
+      destinationDeckId = destination.deckId;
+      deckName = data.decks.find((d) => d.id === destinationDeckId)?.name || 'your deck';
+    }
+
+    const { cards, images } = deserializeIntoDeck(file, destinationDeckId);
+
+    let failures = 0;
+    for (const [cardId, dataUrl] of Object.entries(images)) {
+      const ok = await saveCardImage(cardId, dataUrl);
+      if (!ok) {
+        failures += 1;
+        const card = cards.find((c) => c.id === cardId);
+        if (card) card.hasImage = false;
+      }
+    }
+
+    await persist({
+      ...data,
+      decks: newDeck ? [...data.decks, newDeck] : data.decks,
+      cards: [...data.cards, ...cards],
+    });
+
+    return { count: cards.length, failures, deckName };
+  }
+
   const vocabBtnRef = useRef(null);
   const speakBtnRef = useRef(null);
   const readBtnRef  = useRef(null);
@@ -344,6 +393,7 @@ export default function App() {
                   onSaveDeck={saveDeck}
                   onReorderDecks={reorderDecks}
                   onOpenGuide={() => setShowGuide(true)}
+                  onImport={importCards}
                 />
               } />
               <Route path="/vocabulary/:deckSlug" element={

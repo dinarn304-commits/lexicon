@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ChevronLeft, Plus, GraduationCap, Pencil, Trash2 } from 'lucide-react';
+import { ChevronLeft, Plus, GraduationCap, Pencil, Trash2, Upload, CheckSquare, Square } from 'lucide-react';
 import { isDue } from '../algorithm/scheduler';
+import { serializeCards, downloadJson } from '../storage/transfer';
 import CardThumbnail from '../components/CardThumbnail';
 import DeckForm from './DeckForm';
 import CardForm from './CardForm';
 import NotFoundView from './NotFoundView';
+
+function exportFilename(deck) {
+  const stamp = new Date().toISOString().slice(0, 10);
+  const base = (deck.slug || deck.name || 'deck').toString();
+  return `lexicon-${base}-${stamp}.json`;
+}
 
 export default function DeckView({ data, direction, onSetDirection, onSaveCard, onUpdateCard, onUpdateDeck, onDeleteCard, onDeleteDeck }) {
   const { deckSlug } = useParams();
@@ -18,6 +25,26 @@ export default function DeckView({ data, direction, onSetDirection, onSaveCard, 
   const [subView, setSubView] = useState('deck');
   const [editingCardId, setEditingCardId] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+
+  async function exportCards(cardsToExport) {
+    if (cardsToExport.length === 0) return;
+    const file = await serializeCards(cardsToExport, deck);
+    downloadJson(exportFilename(deck), file);
+  }
+
+  function openSelectMode() {
+    setSelectedIds(new Set());
+    setSubView('exportSelect');
+  }
+
+  function toggleSelected(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     document.title = deck ? `Lexicon · ${deck.name}` : 'Lexicon';
@@ -66,6 +93,71 @@ export default function DeckView({ data, direction, onSetDirection, onSaveCard, 
         onSave={(card) => { onUpdateCard(card); setEditingCardId(null); setSubView('deck'); }}
         onCancel={() => { setEditingCardId(null); setSubView('deck'); }}
       />
+    );
+  }
+
+  if (subView === 'exportSelect') {
+    const allSelected = cards.length > 0 && selectedIds.size === cards.length;
+    return (
+      <div className="max-w-3xl mx-auto px-6 py-10 fade-up">
+        <button className="btn btn-quiet text-sm flex items-center gap-1 mb-6" onClick={() => setSubView('deck')}>
+          <ChevronLeft size={16} /> Back to {deck.name}
+        </button>
+        <div className="ornament text-xs mb-3">· SELECT WORDS ·</div>
+        <h1 className="display text-3xl mb-2">Choose cards to export</h1>
+        <div className="flex items-baseline justify-between mb-6">
+          <p className="italic" style={{ color: 'var(--ink-soft)' }}>
+            {selectedIds.size} of {cards.length} selected
+          </p>
+          <button
+            className="btn btn-quiet text-sm"
+            onClick={() => setSelectedIds(allSelected ? new Set() : new Set(cards.map((c) => c.id)))}
+          >
+            {allSelected ? 'Select none' : 'Select all'}
+          </button>
+        </div>
+
+        <ul className="space-y-2">
+          {cards.map((card) => {
+            const checked = selectedIds.has(card.id);
+            return (
+              <li key={card.id}>
+                <button
+                  className="paper-card w-full text-left flex items-center gap-3"
+                  style={{
+                    padding: '12px 16px',
+                    borderColor: checked ? 'var(--terracotta)' : undefined,
+                    boxShadow: checked ? 'inset 0 0 0 1px var(--terracotta)' : undefined,
+                  }}
+                  onClick={() => toggleSelected(card.id)}
+                  aria-pressed={checked}
+                >
+                  <span style={{ color: checked ? 'var(--terracotta)' : 'var(--ink-faint)', flexShrink: 0 }}>
+                    {checked ? <CheckSquare size={18} /> : <Square size={18} />}
+                  </span>
+                  <span className="flex-1 min-w-0 display text-lg">
+                    {card.front}
+                    <span style={{ color: 'var(--ink-faint)' }}> — </span>
+                    <span style={{ color: 'var(--ink-soft)' }}>{card.back}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="flex gap-3 pt-6">
+          <button
+            className="btn btn-primary px-5 py-2.5 flex items-center gap-2"
+            onClick={() => { exportCards(cards.filter((c) => selectedIds.has(c.id))); setSubView('deck'); }}
+            disabled={selectedIds.size === 0}
+            style={{ opacity: selectedIds.size === 0 ? 0.5 : 1 }}
+          >
+            <Upload size={16} /> Export {selectedIds.size > 0 ? `${selectedIds.size} ` : ''}selected
+          </button>
+          <button className="btn btn-ghost px-5 py-2.5" onClick={() => setSubView('deck')}>Cancel</button>
+        </div>
+      </div>
     );
   }
 
@@ -219,6 +311,17 @@ export default function DeckView({ data, direction, onSetDirection, onSaveCard, 
           </ul>
         )}
       </section>
+
+      {cards.length > 0 && (
+        <div className="mt-12 pt-6 border-t flex flex-wrap gap-3" style={{ borderColor: 'var(--rule)' }}>
+          <button className="btn btn-quiet text-sm flex items-center gap-1.5" onClick={() => exportCards(cards)}>
+            <Upload size={14} /> Export deck
+          </button>
+          <button className="btn btn-quiet text-sm" onClick={openSelectMode}>
+            Select words to export
+          </button>
+        </div>
+      )}
 
       <div className="mt-12 pt-6 border-t" style={{ borderColor: 'var(--rule)' }}>
         {!confirmDelete ? (

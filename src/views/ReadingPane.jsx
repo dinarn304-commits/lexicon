@@ -409,13 +409,8 @@ export default function ReadingPane({
 
     // Defer the mutating work until after the gesture has fully resolved.
     setTimeout(() => {
-      try {
-        window.getSelection()?.removeAllRanges();
-        handleQueryFound(query, paraText);
-      } catch (err) {
-        // Breadcrumb: if a freeze recurs, this surfaces the failing operation.
-        console.error('[reading] touch query failed', err);
-      }
+      window.getSelection()?.removeAllRanges();
+      handleQueryFound(query, paraText);
     }, 0);
   }
 

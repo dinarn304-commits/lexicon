@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Feather, GripVertical } from 'lucide-react';
+import { Plus, Feather, GripVertical, Download } from 'lucide-react';
 import { isDue } from '../algorithm/scheduler';
 import {
   DndContext,
@@ -18,6 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import DeckForm from './DeckForm';
+import ImportView from './ImportView';
 
 function SortableDeckTile({ deck, deckCards, due }) {
   const navigate = useNavigate();
@@ -84,10 +85,35 @@ function SortableDeckTile({ deck, deckCards, due }) {
   );
 }
 
-export default function HomeView({ data, onSaveDeck, onReorderDecks, onOpenGuide }) {
+export default function HomeView({ data, onSaveDeck, onReorderDecks, onOpenGuide, onImport }) {
   const [showAddDeck, setShowAddDeck] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importError, setImportError] = useState('');
+  const fileInputRef = useRef(null);
 
   useEffect(() => { document.title = 'Lexicon'; }, []);
+
+  function handleFileChosen(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImportError('');
+    const reader = new FileReader();
+    reader.onerror = () => setImportError("That file couldn't be read. Please try another.");
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        if (parsed.kind !== 'deck' || !Array.isArray(parsed.cards)) {
+          setImportError("That doesn't look like a Lexicon deck file.");
+          return;
+        }
+        setImportFile(parsed);
+      } catch (_) {
+        setImportError("That file couldn't be read as a Lexicon deck file.");
+      }
+    };
+    reader.readAsText(file);
+  }
 
   const totalDue = data.cards.filter(isDue).length;
   const totalCards = data.cards.length;
@@ -116,6 +142,17 @@ export default function HomeView({ data, onSaveDeck, onReorderDecks, onOpenGuide
       <DeckForm
         onSave={(deck) => { onSaveDeck(deck); setShowAddDeck(false); }}
         onCancel={() => setShowAddDeck(false)}
+      />
+    );
+  }
+
+  if (importFile) {
+    return (
+      <ImportView
+        file={importFile}
+        decks={data.decks}
+        onImport={onImport}
+        onCancel={() => setImportFile(null)}
       />
     );
   }
@@ -155,14 +192,32 @@ export default function HomeView({ data, onSaveDeck, onReorderDecks, onOpenGuide
       <section>
         <div className="flex items-baseline justify-between mb-1">
           <h2 className="display text-2xl">Your decks</h2>
-          <button className="btn btn-quiet text-sm flex items-center gap-1.5" onClick={() => setShowAddDeck(true)}>
-            <Plus size={14} /> New deck
-          </button>
+          <div className="flex items-center gap-2">
+            <button className="btn btn-quiet text-sm flex items-center gap-1.5" onClick={() => fileInputRef.current?.click()}>
+              <Download size={14} /> Import
+            </button>
+            <button className="btn btn-quiet text-sm flex items-center gap-1.5" onClick={() => setShowAddDeck(true)}>
+              <Plus size={14} /> New deck
+            </button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            onChange={handleFileChosen}
+            style={{ display: 'none' }}
+          />
         </div>
 
         <p className="italic text-sm mb-5" style={{ color: 'var(--ink-faint)' }}>
           Your decks live in this browser. They stay private.
         </p>
+
+        {importError && (
+          <p className="italic text-sm mb-5" style={{ color: 'var(--terracotta)' }}>
+            {importError}
+          </p>
+        )}
 
         {data.decks.length === 0 ? (
           <p className="italic" style={{ color: 'var(--ink-soft)', marginTop: '8px' }}>
