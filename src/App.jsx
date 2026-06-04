@@ -3,7 +3,7 @@ import { Routes, Route, Navigate, NavLink, useNavigate, useLocation } from 'reac
 import { applyRating, migrateCard } from './algorithm/scheduler';
 import { loadAppData, saveAppData } from './storage/storage';
 import { removeCardImage, saveCardImage } from './storage/images';
-import { deserializeIntoDeck } from './storage/transfer';
+import { deserializeIntoDeck, deserializeLibrary } from './storage/transfer';
 import { checkStorageHealth, requestPersistentStorage } from './storage/persistence';
 import { createSampleData } from './utils/card';
 import { makeId } from './utils/id';
@@ -21,6 +21,7 @@ import ReadingView from './views/ReadingView';
 import ReadingPane from './views/ReadingPane';
 import SharedTextView from './views/SharedTextView';
 import GuideView from './views/GuideView';
+import SettingsView from './views/SettingsView';
 import NotFoundView from './views/NotFoundView';
 
 function migrateSlugs(saved) {
@@ -313,6 +314,41 @@ export default function App() {
     return { count: cards.length, failures, deckName };
   }
 
+  // Non-destructive whole-library restore. Decks, cards and texts come back as
+  // independent copies appended alongside the live library; global scalars
+  // (preferences, counters, discoveredWordsDecks, …) are left untouched.
+  async function restoreLibrary(file) {
+    const deckSlugs = new Set(data.decks.map((d) => d.slug).filter(Boolean));
+    const textSlugs = new Set((data.texts || []).map((t) => t.slug).filter(Boolean));
+    const { decks, cards, texts, cardImages, textImages } = deserializeLibrary(file, deckSlugs, textSlugs);
+
+    let failures = 0;
+    for (const [cardId, dataUrl] of Object.entries(cardImages)) {
+      const ok = await saveCardImage(cardId, dataUrl);
+      if (!ok) {
+        failures += 1;
+        const card = cards.find((c) => c.id === cardId);
+        if (card) card.hasImage = false;
+      }
+    }
+    for (const [imageId, base64] of Object.entries(textImages)) {
+      try {
+        localStorage.setItem(`srs-text-image-${imageId}`, base64);
+      } catch (_) {
+        failures += 1;
+      }
+    }
+
+    await persist({
+      ...data,
+      decks: [...data.decks, ...decks],
+      cards: [...data.cards, ...cards],
+      texts: [...(data.texts || []), ...texts],
+    });
+
+    return { deckCount: decks.length, cardCount: cards.length, textCount: texts.length, failures };
+  }
+
   const vocabBtnRef = useRef(null);
   const speakBtnRef = useRef(null);
   const readBtnRef  = useRef(null);
@@ -446,12 +482,19 @@ export default function App() {
                   onUpdateTranslationLanguage={updateTranslationLanguage}
                 />
               } />
+              <Route path="/settings" element={
+                <SettingsView data={data} onRestore={restoreLibrary} />
+              } />
               <Route path="*" element={<NotFoundView />} />
             </Routes>
           )}
         </div>
         {!showGuide && (
-          <PageFooter onGuideClick={() => setShowGuide(true)} onFeedbackClick={() => setFeedbackOpen(true)} />
+          <PageFooter
+            onGuideClick={() => setShowGuide(true)}
+            onSettingsClick={() => navigate('/settings')}
+            onFeedbackClick={() => setFeedbackOpen(true)}
+          />
         )}
       </div>
       {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
