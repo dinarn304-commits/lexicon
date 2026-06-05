@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { X, GripVertical } from 'lucide-react';
 import { getLanguageMeta } from '../utils/language';
 
 function extractPlainText(doc) {
@@ -20,7 +20,15 @@ function formatDate(isoString) {
   return `${date}, ${time}`;
 }
 
-export default function TextCard({ text, onOpen, onDelete }) {
+export default function TextCard({
+  text,
+  onOpen,
+  onDelete,
+  sortableRef,
+  sortableStyle,
+  sortableAttributes,
+  sortableListeners,
+}) {
   const excerpt = extractPlainText(text.content).slice(0, 150);
   const pct = text.wordCount > 0
     ? Math.round(Math.min(100, Math.max(0, ((text.wordsReadInThisText ?? 0) / text.wordCount) * 100)))
@@ -34,7 +42,22 @@ export default function TextCard({ text, onOpen, onDelete }) {
   }
 
   return (
-    <div className="text-card" onClick={() => onOpen(text.id)}>
+    <div
+      ref={sortableRef}
+      style={sortableStyle}
+      className="text-card group"
+      onClick={() => onOpen(text.id)}
+      {...sortableAttributes}
+      {...sortableListeners}
+    >
+      {sortableListeners && (
+        <div
+          className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity opacity-0 group-hover:opacity-35"
+          style={{ color: 'var(--ink-faint)', pointerEvents: 'none' }}
+        >
+          <GripVertical size={14} />
+        </div>
+      )}
       <div className="text-card-header">
         <div className="text-card-title-row">
           <h3 className="text-card-title">{text.title}</h3>

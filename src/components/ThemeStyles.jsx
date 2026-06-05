@@ -408,6 +408,12 @@ export default function ThemeStyles() {
         color: var(--terracotta);
         text-transform: uppercase;
       }
+      .logo-link {
+        text-decoration: none;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+      }
+      .logo-link:hover { opacity: 0.82; }
 
       .page-footer {
         border-top: 1px solid var(--rule);
@@ -644,17 +650,6 @@ export default function ThemeStyles() {
         white-space: nowrap;
       }
       .guide-back-btn:hover { color: var(--ink); }
-      .guide-logo-unit {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 13px;
-        margin-bottom: 20px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        width: 100%;
-      }
       .guide-title {
         font-family: 'Fraunces', Georgia, serif;
         font-weight: 500;

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Feather } from 'lucide-react';
 import { topicsA1A2, topicsB1B2 } from '../speaking/topics';
 import { pickTopic } from '../speaking/randomizer';
+import Wordmark from '../components/Wordmark';
 
 function formatTime(s) {
   const m = Math.floor(s / 60);
@@ -250,6 +251,7 @@ export default function SpeakingView() {
 
   return (
     <div className="max-w-xl mx-auto px-6 py-12 fade-up">
+      <Wordmark />
       {/* Header */}
       <header className="mb-10 text-center">
         <div className="ornament mb-4"

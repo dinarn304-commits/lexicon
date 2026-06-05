@@ -95,6 +95,22 @@ export default function App() {
         }
         saved.texts = saved.texts.map((t) => t.sourceLanguage ? t : { ...t, sourceLanguage: 'tr' });
 
+        // Additive order migration: any text lacking `order` is assigned a
+        // sequential value seeded from the current createdAt-descending display
+        // order, so existing libraries appear in exactly the same on-screen
+        // order after migration as before (texts are stored oldest-first but
+        // were displayed newest-first, so we must seed from display order, not
+        // array position).
+        if (saved.texts.some((t) => t.order == null)) {
+          const byDisplay = [...saved.texts].sort(
+            (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          );
+          const rank = new Map(byDisplay.map((t, i) => [t.id, i]));
+          saved.texts = saved.texts.map((t) =>
+            t.order == null ? { ...t, order: rank.get(t.id) } : t
+          );
+        }
+
         const { changed, data: migratedData } = migrateSlugs(saved);
         if (changed) {
           await saveAppData(migratedData);
@@ -190,7 +206,8 @@ export default function App() {
     const sourceLang = text.sourceLanguage || 'tr';
     const existingTextSlugs = new Set(data.texts.map((t) => t.slug).filter(Boolean));
     const textSlug = ensureUniqueSlug(slugify(text.title), existingTextSlugs);
-    const textWithSlug = { ...text, slug: textSlug };
+    const maxOrder = (data.texts || []).reduce((m, t) => Math.max(m, t.order ?? -1), -1);
+    const textWithSlug = { ...text, slug: textSlug, order: maxOrder + 1 };
 
     const newData = { ...data, texts: [...(data.texts || []), textWithSlug] };
     if (!newData.discoveredWordsDecks[sourceLang]) {
@@ -267,6 +284,10 @@ export default function App() {
     persist({ ...data, decks: newDecks });
   }
 
+  function reorderTexts(newTexts) {
+    persist({ ...data, texts: newTexts });
+  }
+
   // Pure-append import: deserialized cards keep their full SRS state; only id and
   // deckId are reassigned (in deserializeIntoDeck). Images are re-keyed to the new
   // card ids and written separately. Returns a summary for the import UI.
@@ -339,11 +360,17 @@ export default function App() {
       }
     }
 
+    // Restored texts land at the end of the library: assign fresh sequential
+    // `order` continuing past the current max so they never collide with
+    // existing texts' order values.
+    const maxOrder = (data.texts || []).reduce((m, t) => Math.max(m, t.order ?? -1), -1);
+    const orderedTexts = texts.map((t, i) => ({ ...t, order: maxOrder + 1 + i }));
+
     await persist({
       ...data,
       decks: [...data.decks, ...decks],
       cards: [...data.cards, ...cards],
-      texts: [...(data.texts || []), ...texts],
+      texts: [...(data.texts || []), ...orderedTexts],
     });
 
     return { deckCount: decks.length, cardCount: cards.length, textCount: texts.length, failures };
@@ -457,6 +484,7 @@ export default function App() {
                   data={data}
                   onSaveText={saveText}
                   onDeleteText={deleteText}
+                  onReorderTexts={reorderTexts}
                   onUpdateReadingProgress={updateReadingProgress}
                   onUpdateReadingPreferences={updateReadingPreferences}
                   onSaveCard={saveCard}

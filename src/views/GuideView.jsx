@@ -1,15 +1,6 @@
-export default function GuideView({ onBack }) {
-  const LogoSvg = () => (
-    <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-      <path d="M 26,3 C 29,5 28,10 24,15 C 21,19 17,23 12,27 L 8,29 L 9,25 C 13,23 17,19 21,15 C 24,11 26,7 26,3 Z" fill="var(--terracotta)" />
-      <line x1="9" y1="26" x2="24" y2="6" stroke="var(--paper)" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
-      <line x1="11" y1="22" x2="15" y2="24" stroke="var(--paper)" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
-      <line x1="14" y1="18" x2="18" y2="20" stroke="var(--paper)" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
-      <line x1="18" y1="13" x2="22" y2="15" stroke="var(--paper)" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
-      <line x1="21" y1="9" x2="25" y2="11" stroke="var(--paper)" strokeWidth="1.2" strokeLinecap="round" opacity="0.55" />
-    </svg>
-  );
+import Wordmark from '../components/Wordmark';
 
+export default function GuideView({ onBack }) {
   const Divider = () => (
     <div className="guide-divider" aria-hidden="true">· · ·</div>
   );
@@ -20,14 +11,11 @@ export default function GuideView({ onBack }) {
 
         {/* Back link */}
         <div className="guide-back-row">
-          <button className="guide-back-btn" onClick={onBack}>« Back</button>
+          <button className="guide-back-btn" onClick={onBack}>Back</button>
         </div>
 
         {/* Logo */}
-        <button className="guide-logo-unit" onClick={onBack} aria-label="Back to Lexicon">
-          <LogoSvg />
-          <span className="logo-wordmark">Lexicon</span>
-        </button>
+        <Wordmark onClick={onBack} />
 
         {/* Title */}
         <h1 className="guide-title">Guide</h1>
@@ -230,12 +218,12 @@ export default function GuideView({ onBack }) {
 
         {/* Closing flourish */}
         <div className="guide-closing">
-          « Made with care, for those who collect words. »
+          «Made with care, for those who collect words»
         </div>
 
         {/* Bottom back link */}
         <div className="guide-bottom-back">
-          <button className="guide-back-btn" onClick={onBack}>« Back to Lexicon</button>
+          <button className="guide-back-btn" onClick={onBack}>Back to Lexicon</button>
         </div>
 
       </div>

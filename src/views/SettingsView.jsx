@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, Download, Upload } from 'lucide-react';
 import { serializeLibrary, downloadJson } from '../storage/transfer';
+import Wordmark from '../components/Wordmark';
 
 function Section({ title, children }) {
   return (
@@ -63,6 +64,8 @@ export default function SettingsView({ data, onRestore }) {
       <Link className="btn btn-quiet text-sm flex items-center gap-1 mb-6" to="/vocabulary">
         <ChevronLeft size={16} /> Notebook
       </Link>
+
+      <Wordmark />
 
       <div className="ornament text-xs mb-3">· SETTINGS ·</div>
       <h1 className="display text-4xl mb-8">Settings</h1>
