@@ -668,15 +668,10 @@ export default function ThemeStyles() {
         line-height: 1.7;
         margin-bottom: 44px;
       }
-      .guide-divider {
-        font-family: 'Fraunces', Georgia, serif;
-        color: var(--terracotta);
-        letter-spacing: 0.4em;
-        text-align: center;
-        margin: 44px 0;
-        font-size: 13px;
-      }
       .guide-section {
+        margin-bottom: 56px;
+      }
+      .guide-section:last-of-type {
         margin-bottom: 0;
       }
       .guide-heading {
