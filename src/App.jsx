@@ -13,6 +13,7 @@ import ThemeStyles from './components/ThemeStyles';
 import Loader from './components/Loader';
 import PageFooter from './components/PageFooter';
 import FeedbackModal from './components/FeedbackModal';
+import SupportModal from './components/SupportModal';
 import HomeView from './views/HomeView';
 import DeckView from './views/DeckView';
 import ReviewView from './views/ReviewView';
@@ -53,6 +54,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [direction, setDirection] = useState('forward');
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
 
   const navigate = useNavigate();
@@ -522,10 +524,12 @@ export default function App() {
             onGuideClick={() => setShowGuide(true)}
             onSettingsClick={() => navigate('/settings')}
             onFeedbackClick={() => setFeedbackOpen(true)}
+            onSupportClick={() => setSupportOpen(true)}
           />
         )}
       </div>
       {feedbackOpen && <FeedbackModal onClose={() => setFeedbackOpen(false)} />}
+      {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} />}
     </div>
   );
 }

@@ -515,6 +515,29 @@ export default function ThemeStyles() {
       }
       .feedback-modal-copy-btn:hover { background: var(--ink); }
 
+      .support-modal-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 4px;
+      }
+      .support-modal-link {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 14px;
+        color: var(--terracotta);
+        background: transparent;
+        border: 1px solid var(--terracotta);
+        border-radius: 4px;
+        padding: 10px 16px;
+        text-align: center;
+        text-decoration: none;
+        transition: color 0.18s ease, border-color 0.18s ease;
+      }
+      .support-modal-link:hover {
+        color: var(--ink);
+        border-color: var(--ink);
+      }
+
       .import-text-modal {
         background: var(--paper);
         border: 1px solid var(--rule);
