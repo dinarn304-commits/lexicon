@@ -210,6 +210,24 @@ export default function ThemeStyles() {
         pointer-events: none;
       }
 
+      .card-speaker-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--terracotta);
+        padding: 0.375rem;
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+        transition: color 0.12s;
+      }
+      .card-speaker-btn:hover { color: var(--ink); }
+      .review-card-speaker {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+      }
+
       .rate-btn {
         font-family: 'Fraunces', serif;
         background: var(--paper-2);

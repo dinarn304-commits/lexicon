@@ -4,6 +4,7 @@ import { ChevronLeft, Plus, GraduationCap, Pencil, Trash2, Upload, CheckSquare, 
 import { isDue } from '../algorithm/scheduler';
 import { serializeCards, downloadJson } from '../storage/transfer';
 import CardThumbnail from '../components/CardThumbnail';
+import SpeakerButton from '../components/SpeakerButton';
 import DeckForm from './DeckForm';
 import CardForm from './CardForm';
 import NotFoundView from './NotFoundView';
@@ -289,6 +290,7 @@ export default function DeckView({ data, direction, onSetDirection, onSaveCard, 
                       {Math.ceil((new Date(card.nextReview) - new Date()) / 86400000)}d
                     </span>
                   )}
+                  <SpeakerButton text={card.front} language={deck.language} />
                   <button
                     className="btn btn-quiet p-1.5"
                     onClick={() => { setEditingCardId(card.id); setSubView('editCard'); }}
