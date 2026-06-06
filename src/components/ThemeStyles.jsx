@@ -224,9 +224,13 @@ export default function ThemeStyles() {
       .card-speaker-btn:hover { color: var(--ink); }
       .review-card-speaker {
         position: absolute;
-        top: 8px;
-        left: 8px;
+        top: 13px;
+        left: 16px;
+        color: var(--terracotta-soft);
       }
+      .review-card-speaker:hover { color: var(--terracotta); }
+      .list-card-speaker { color: var(--ink-soft); }
+      .list-card-speaker:hover { color: var(--ink); }
 
       .rate-btn {
         font-family: 'Fraunces', serif;

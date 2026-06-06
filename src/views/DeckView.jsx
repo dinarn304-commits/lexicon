@@ -290,7 +290,7 @@ export default function DeckView({ data, direction, onSetDirection, onSaveCard, 
                       {Math.ceil((new Date(card.nextReview) - new Date()) / 86400000)}d
                     </span>
                   )}
-                  <SpeakerButton text={card.front} language={deck.language} />
+                  <SpeakerButton text={card.front} language={deck.language} className="list-card-speaker" />
                   <button
                     className="btn btn-quiet p-1.5"
                     onClick={() => { setEditingCardId(card.id); setSubView('editCard'); }}

@@ -128,7 +128,7 @@ export default function ReviewView({ data, direction = 'forward', onPersistCard 
       </div>
 
       <div className="flashcard p-12 mb-6" onClick={() => !revealed && setRevealed(true)}>
-        <SpeakerButton text={card.front} language={deck.language} className="review-card-speaker" />
+        <SpeakerButton text={card.front} language={deck.language} className="review-card-speaker" size={24} />
         <div className="flex flex-col items-center justify-center text-center" style={{ minHeight: 280 }}>
           <div className="ornament text-xs mb-6">{promptLabel}</div>
           <div className="display text-5xl mb-4" style={{ lineHeight: 1.15 }}>
