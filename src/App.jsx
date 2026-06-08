@@ -208,8 +208,12 @@ export default function App() {
     const sourceLang = text.sourceLanguage || 'tr';
     const existingTextSlugs = new Set(data.texts.map((t) => t.slug).filter(Boolean));
     const textSlug = ensureUniqueSlug(slugify(text.title), existingTextSlugs);
-    const maxOrder = (data.texts || []).reduce((m, t) => Math.max(m, t.order ?? -1), -1);
-    const textWithSlug = { ...text, slug: textSlug, order: maxOrder + 1 };
+    // New texts land at the visual top of the library (sorted by `order`
+    // ascending), so they get an order below the current minimum.
+    const texts = data.texts || [];
+    const minOrder = texts.reduce((m, t) => Math.min(m, t.order ?? 0), Infinity);
+    const order = texts.length === 0 ? 0 : minOrder - 1;
+    const textWithSlug = { ...text, slug: textSlug, order };
 
     const newData = { ...data, texts: [...(data.texts || []), textWithSlug] };
     if (!newData.discoveredWordsDecks[sourceLang]) {
