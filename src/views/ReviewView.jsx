@@ -71,6 +71,10 @@ export default function ReviewView({ data, direction = 'forward', onPersistCard 
     const updated = applyRating(current, quality);
     onPersistCard(updated);
 
+    // Reset the reveal in the SAME batched update that advances the queue, so the
+    // next card can never render with its answer side showing (not even one frame).
+    setRevealed(false);
+
     const key = quality === 1 ? 'again' : quality === 3 ? 'hard' : quality === 4 ? 'good' : 'easy';
     setSessionStats((s) => ({ ...s, total: s.total + 1, [key]: s[key] + 1 }));
 
@@ -127,7 +131,7 @@ export default function ReviewView({ data, direction = 'forward', onPersistCard 
         </div>
       </div>
 
-      <div className="flashcard p-12 mb-6" onClick={() => !revealed && setRevealed(true)}>
+      <div key={card.id} className="flashcard p-12 mb-6" onClick={() => !revealed && setRevealed(true)}>
         <SpeakerButton text={card.front} language={deck.language} className="review-card-speaker" size={24} />
         <div className="flex flex-col items-center justify-center text-center" style={{ minHeight: 280 }}>
           <div className="ornament text-xs mb-6">{promptLabel}</div>
