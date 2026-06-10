@@ -1601,6 +1601,16 @@ export default function ThemeStyles() {
       .deepl-primary {
         padding: 0.15rem 0 0.1rem;
       }
+      /* Quiet caption shown in place of DeepL when target == source language */
+      .deepl-same-pair-note {
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 0.7rem;
+        color: var(--ink-faint);
+        line-height: 1.5;
+        letter-spacing: 0.01em;
+        margin: 0;
+        padding: 0.2rem 0;
+      }
 
       /* ─── Translation backdrop + drag handle (mobile only) ────── */
       .translation-backdrop { display: none; }

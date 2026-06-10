@@ -197,6 +197,7 @@ export default function SharedTextView({
   useEffect(() => {
     if (!translationQuery) return;
     if (translationQuery.trim().split(/\s+/).filter(Boolean).length > 2) return;
+    if (translationLang === sourceLang) return; // same-language pair: Glosbe is meaningless, don't fetch
     setTranslationResult({ translations: [], examples: [], loading: true });
     fetch(`/api/glosbe?word=${encodeURIComponent(translationQuery)}&lang=${translationLang}&sourceLang=${sourceLang}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
@@ -210,6 +211,7 @@ export default function SharedTextView({
 
   useEffect(() => {
     if (!deeplQuery) return;
+    if (translationLang === sourceLang) return; // same-language pair: DeepL is meaningless, don't fetch
     const DEEPL_CODES = { tr: 'TR', en: 'EN', es: 'ES', fr: 'FR', ru: 'RU', de: 'DE', ar: 'AR', zh: 'ZH' };
     const targetLang = DEEPL_CODES[translationLang] || 'EN';
     setDeeplResult({ sentence: deeplQuery, translation: null, loading: true, error: null });
@@ -647,6 +649,7 @@ export default function SharedTextView({
           word={translationQuery}
           lang={translationLang}
           sourceLang={sourceLang}
+          samePair={translationLang === sourceLang}
           translations={translationResult.translations}
           examples={translationResult.examples}
           loading={translationResult.loading}

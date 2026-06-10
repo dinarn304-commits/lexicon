@@ -8,6 +8,7 @@ export default function TranslationPanel({
   word,
   lang,
   sourceLang,
+  samePair,
   translations,
   examples,
   loading,
@@ -154,7 +155,7 @@ export default function TranslationPanel({
       <div className="translation-panel-header">
         <h3 className="translation-panel-word">{word}</h3>
         <div className="translation-lang-toggle">
-          {ALL_TARGET_LANGS.filter((l) => l !== sourceLang).map((l, i) => (
+          {ALL_TARGET_LANGS.map((l, i) => (
             <Fragment key={l}>
               {i > 0 && <span className="translation-lang-divider">·</span>}
               <button
@@ -199,22 +200,24 @@ export default function TranslationPanel({
                     )}
                   </>
                 )}
-                <div
-                  className="define-glosbe-toggle"
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setGlosbeExpanded((e) => !e)}
-                  onKeyDown={(e) => e.key === 'Enter' && setGlosbeExpanded((v) => !v)}
-                >
-                  <span className="define-glosbe-line" />
-                  <span className="define-glosbe-chevron">{glosbeExpanded ? '−' : '+'}</span>
-                  <span className="define-glosbe-line" />
-                </div>
+                {!samePair && (
+                  <div
+                    className="define-glosbe-toggle"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setGlosbeExpanded((e) => !e)}
+                    onKeyDown={(e) => e.key === 'Enter' && setGlosbeExpanded((v) => !v)}
+                  >
+                    <span className="define-glosbe-line" />
+                    <span className="define-glosbe-chevron">{glosbeExpanded ? '−' : '+'}</span>
+                    <span className="define-glosbe-line" />
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Glosbe section */}
-            {glosbeExpanded && (
+            {/* Glosbe section — skipped entirely for a same-language pair */}
+            {!samePair && glosbeExpanded && (
               loading ? (
                 <p className="translation-loading">looking up…</p>
               ) : translations.length > 0 ? (
@@ -237,7 +240,8 @@ export default function TranslationPanel({
               )
             )}
 
-            {/* DeepL pill button */}
+            {/* DeepL pill button — hidden for a same-language pair */}
+            {!samePair && (
             <div className="deepl-pill-wrapper">
               <button
                 className={`deepl-pill${deeplExpanded ? ' deepl-pill-open' : ''}`}
@@ -261,11 +265,14 @@ export default function TranslationPanel({
                 <p className="deepl-pill-caption">for when you need the whole sentence translated</p>
               )}
             </div>
+            )}
           </>
         ) : (
           /* 3+ word path: DeepL is the primary response */
           <div className="deepl-primary">
-            {deepl.loading ? (
+            {samePair ? (
+              <p className="deepl-same-pair-note">Phrases can be translated into any other language.</p>
+            ) : deepl.loading ? (
               <span className="define-loading" />
             ) : deepl.error ? (
               <p className="deepl-fallback">Translation unavailable just now.</p>
