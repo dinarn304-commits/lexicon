@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { Volume2 } from 'lucide-react';
+import { DEEPL_SUPPORTED } from '../utils/language';
 
-const ALL_TARGET_LANGS = ['tr', 'en', 'es', 'fr', 'ru', 'de', 'ar', 'zh'];
+const ALL_TARGET_LANGS = ['tr', 'en', 'es', 'fr', 'ru', 'de', 'ar', 'fa', 'hi', 'zh'];
 
 export default function TranslationPanel({
   word,
@@ -46,6 +47,11 @@ export default function TranslationPanel({
 
   const wordCount = word ? word.trim().split(/\s+/).filter(Boolean).length : 0;
   const isShortSelection = wordCount <= 2;
+
+  // Routing is a pure function of the pair, so the engine that will answer is
+  // known up front — label it deterministically rather than waiting on the result.
+  const engineLabel =
+    DEEPL_SUPPORTED.includes(sourceLang) && DEEPL_SUPPORTED.includes(lang) ? 'DeepL' : 'GPT';
 
   useEffect(() => {
     setAddingToDeck(false);
@@ -247,7 +253,7 @@ export default function TranslationPanel({
                 className={`deepl-pill${deeplExpanded ? ' deepl-pill-open' : ''}`}
                 onClick={handleDeeplRowTap}
               >
-                <span className="deepl-pill-label">DeepL — translation</span>
+                <span className="deepl-pill-label">{engineLabel} — translation</span>
                 <span className="deepl-pill-chevron">{deeplExpanded ? '−' : '+'}</span>
               </button>
               {deeplExpanded && (

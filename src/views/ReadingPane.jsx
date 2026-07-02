@@ -6,6 +6,7 @@ import TranslationPanel from '../components/TranslationPanel';
 import ShareModal from '../components/ShareModal';
 import { makeCard } from '../utils/card';
 import { findSentence } from '../utils/sentence';
+import { translateSentence } from '../utils/language';
 import NotFoundView from './NotFoundView';
 
 const MARGIN_OPTIONS = ['narrow', 'normal', 'wide'];
@@ -200,7 +201,7 @@ export default function ReadingPane({
   const [defineQuery, setDefineQuery] = useState(null);
   const [defineResult, setDefineResult] = useState({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
 
-  const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru' };
+  const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru', fr: 'ru', hi: 'ru' };
 
   const sourceLang = text?.sourceLanguage || 'tr';
   const translationLang = data.translationLanguagesBySource?.[sourceLang] ?? TRANSLATION_DEFAULTS[sourceLang] ?? 'ru';
@@ -225,24 +226,12 @@ export default function ReadingPane({
 
   useEffect(() => {
     if (!deeplQuery) return;
-    if (translationLang === sourceLang) return; // same-language pair: DeepL is meaningless, don't fetch
-    const DEEPL_CODES = { tr: 'TR', en: 'EN', es: 'ES', fr: 'FR', ru: 'RU', de: 'DE', ar: 'AR', zh: 'ZH' };
-    const targetLang = DEEPL_CODES[translationLang] || 'EN';
+    if (translationLang === sourceLang) return; // same-language pair: translation is meaningless, don't fetch
     setDeeplResult({ sentence: deeplQuery, translation: null, loading: true, error: null });
-    fetch('/api/deepl', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: deeplQuery, targetLang }),
-    })
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) {
-          setDeeplResult({ sentence: deeplQuery, translation: null, loading: false, error: json.error });
-        } else {
-          setDeeplResult({ sentence: deeplQuery, translation: json.translation, loading: false, error: null });
-        }
-      })
-      .catch(() => setDeeplResult({ sentence: deeplQuery, translation: null, loading: false, error: 'deepl_unavailable' }));
+    translateSentence({ text: deeplQuery, sourceLang, targetLang: translationLang })
+      .then(({ translation, error }) => {
+        setDeeplResult({ sentence: deeplQuery, translation, loading: false, error });
+      });
   }, [deeplQuery, translationLang]);
 
   useEffect(() => {

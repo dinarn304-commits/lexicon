@@ -3,8 +3,8 @@ import { parse } from 'node-html-parser';
 export default async function handler(req, res) {
   const { word, lang, sourceLang = 'tr' } = req.query;
 
-  const VALID_TARGET_LANGS = ['tr', 'en', 'es', 'fr', 'ru', 'de', 'ar', 'zh'];
-  const VALID_SOURCE_LANGS = ['tr', 'en', 'es'];
+  const VALID_TARGET_LANGS = ['tr', 'en', 'es', 'fr', 'ru', 'de', 'ar', 'fa', 'hi', 'zh'];
+  const VALID_SOURCE_LANGS = ['tr', 'en', 'es', 'fr', 'hi'];
 
   if (!word || !lang) {
     return res.status(400).json({ error: 'Missing required parameters: word and lang' });

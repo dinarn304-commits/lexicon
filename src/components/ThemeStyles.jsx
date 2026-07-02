@@ -584,6 +584,7 @@ export default function ThemeStyles() {
         display: flex;
         align-items: center;
         gap: 0.3rem;
+        flex-wrap: wrap;
       }
       .source-lang-btn {
         font-family: 'DM Mono', ui-monospace, monospace;

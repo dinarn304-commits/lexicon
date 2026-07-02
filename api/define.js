@@ -3,6 +3,7 @@ const MODEL = 'gpt-5.4-mini';
 const LANG_NAMES = {
   tr: 'Turkish', en: 'English', es: 'Spanish', ru: 'Russian',
   fr: 'French',  de: 'German',  ar: 'Arabic',  zh: 'Chinese',
+  fa: 'Persian (Farsi)', hi: 'Hindi',
 };
 
 export default async function handler(req, res) {
