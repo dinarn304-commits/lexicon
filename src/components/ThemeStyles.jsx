@@ -1,7 +1,7 @@
 export default function ThemeStyles() {
   return (
     <style>{`
-      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=DM+Mono:wght@400;500&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=DM+Mono:wght@400;500&family=Amiri:wght@400;700&display=swap');
 
       /* Vollkorn covers Cyrillic range under the Fraunces family name so
          Latin text uses Fraunces and Cyrillic text uses Vollkorn's
@@ -1026,15 +1026,29 @@ export default function ThemeStyles() {
         line-height: var(--reading-line-height, 1.75);
         color: var(--ink);
         margin: 0 0 1em;
-        padding-left: 1.5em;
+        padding-inline-start: 1.5em;
       }
       .reading-list li { margin-bottom: 0.25em; }
       .reading-blockquote {
-        border-left: 2px solid var(--terracotta-soft);
+        border-inline-start: 2px solid var(--terracotta-soft);
         margin: 0 0 1em;
-        padding-left: 1.25em;
+        padding-inline-start: 1.25em;
         font-style: italic;
         color: var(--ink-soft);
+      }
+
+      /* Arabic-script serif for RTL source texts. Amiri leads the stack so the
+         script renders in its intended face; embedded Latin/numbers fall through
+         to Fraunces per-glyph. No line-height override — Arabic's taller metrics
+         are honoured, per the established May decision. */
+      .reading-pane-title[dir="rtl"] {
+        font-family: 'Amiri', 'Fraunces', serif;
+      }
+      .reading-pane-text[dir="rtl"] .reading-para,
+      .reading-pane-text[dir="rtl"] .reading-heading,
+      .reading-pane-text[dir="rtl"] .reading-list,
+      .reading-pane-text[dir="rtl"] .reading-blockquote {
+        font-family: 'Amiri', 'Fraunces', serif;
       }
       .reading-code {
         font-family: 'DM Mono', ui-monospace, monospace;
@@ -1127,7 +1141,7 @@ export default function ThemeStyles() {
         padding: 0.75rem 1.25rem 1.1rem;
       }
       .translation-panel-word {
-        font-family: 'Fraunces', serif;
+        font-family: 'Fraunces', 'Amiri', serif;
         font-size: 1.25rem;
         font-weight: 500;
         color: var(--ink);
@@ -1135,14 +1149,26 @@ export default function ThemeStyles() {
         padding-right: 1.6rem;
         line-height: 1.3;
       }
+      /* Gutter-clipping separators: every code (including each row's first) has a
+         ::before dot living in a left gutter. The flex row is pulled left by one
+         gutter width and the wrapper clips the overflow, so each row's leading dot
+         falls outside the clip and disappears — dots render only BETWEEN codes on
+         the same row, never dangling at a wrap boundary. Works for any number of
+         rows and any wrap point. */
+      .translation-lang-toggle-clip {
+        overflow: hidden;
+        margin-bottom: 0.85rem;
+      }
       .translation-lang-toggle {
         display: flex;
         align-items: center;
-        gap: 0.3rem;
-        margin-bottom: 0.85rem;
         flex-wrap: wrap;
+        row-gap: 0.35rem;
+        margin-left: -0.9rem;
       }
       .translation-lang-btn {
+        position: relative;
+        margin-left: 0.9rem;
         font-family: 'DM Mono', ui-monospace, monospace;
         font-size: 11px;
         background: transparent;
@@ -1154,6 +1180,20 @@ export default function ThemeStyles() {
         transition: color 0.12s;
         line-height: 1;
         letter-spacing: 0.03em;
+      }
+      .translation-lang-btn::before {
+        content: "·";
+        position: absolute;
+        left: -0.9rem;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0.9rem;
+        text-align: center;
+        font-family: 'DM Mono', ui-monospace, monospace;
+        font-size: 11px;
+        line-height: 1;
+        color: var(--rule);
+        pointer-events: none;
       }
       .translation-lang-btn.active {
         color: var(--terracotta);
@@ -1182,7 +1222,7 @@ export default function ThemeStyles() {
         padding: 0;
       }
       .translation-item {
-        font-family: 'Fraunces', serif;
+        font-family: 'Fraunces', 'Amiri', serif;
         font-size: 1rem;
         color: var(--ink);
         line-height: 1.55;
@@ -1293,7 +1333,7 @@ export default function ThemeStyles() {
         line-height: 1.5;
       }
       .deepl-translation {
-        font-family: 'Fraunces', Georgia, serif;
+        font-family: 'Fraunces', 'Amiri', Georgia, serif;
         font-size: 0.95rem;
         color: var(--ink);
         margin: 0;
@@ -1457,13 +1497,13 @@ export default function ThemeStyles() {
         color: var(--ink-faint);
       }
       .define-base {
-        font-family: 'Fraunces', Georgia, serif;
+        font-family: 'Fraunces', 'Amiri', Georgia, serif;
         font-size: 0.95rem;
         color: var(--terracotta);
         font-weight: 500;
       }
       .define-meaning {
-        font-family: 'Fraunces', Georgia, serif;
+        font-family: 'Fraunces', 'Amiri', Georgia, serif;
         font-size: 1rem;
         color: var(--ink);
         margin: 0 0 0.3rem;

@@ -39,10 +39,35 @@ export const SOURCE_LANGUAGES = [
     deckName: 'पढ़ते समय खोजे गए शब्द',
     deckLanguageLabel: 'Hindi',
   },
+  {
+    code: 'ar',
+    nativeName: 'العربية',
+    englishName: 'Arabic',
+    deckId: 'deck-discovered-words-ar',
+    deckName: 'كلمات مكتشفة أثناء القراءة',
+    deckLanguageLabel: 'Arabic',
+  },
+  {
+    code: 'fa',
+    nativeName: 'فارسی',
+    englishName: 'Persian',
+    deckId: 'deck-discovered-words-fa',
+    deckName: 'واژه‌های کشف‌شده هنگام خواندن',
+    deckLanguageLabel: 'Persian',
+  },
 ];
 
 export function getLanguageMeta(code) {
   return SOURCE_LANGUAGES.find((l) => l.code === code) ?? SOURCE_LANGUAGES[0];
+}
+
+// Right-to-left source languages. The reading title and body get dir="rtl" so the
+// browser's bidi algorithm lays them out correctly (embedded Latin/numbers stay
+// LTR); the app chrome and translation panel remain LTR.
+export const RTL_LANGUAGES = ['ar', 'fa'];
+
+export function isRTL(code) {
+  return RTL_LANGUAGES.includes(code);
 }
 
 // Languages DeepL can translate. A sentence-translation request uses DeepL only

@@ -6,7 +6,7 @@ import TranslationPanel from '../components/TranslationPanel';
 import ShareModal from '../components/ShareModal';
 import { makeCard } from '../utils/card';
 import { findSentence } from '../utils/sentence';
-import { translateSentence } from '../utils/language';
+import { translateSentence, isRTL } from '../utils/language';
 import NotFoundView from './NotFoundView';
 
 const MARGIN_OPTIONS = ['narrow', 'normal', 'wide'];
@@ -201,7 +201,7 @@ export default function ReadingPane({
   const [defineQuery, setDefineQuery] = useState(null);
   const [defineResult, setDefineResult] = useState({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
 
-  const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru', fr: 'ru', hi: 'ru' };
+  const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru', fr: 'ru', hi: 'ru', ar: 'ru', fa: 'ru' };
 
   const sourceLang = text?.sourceLanguage || 'tr';
   const translationLang = data.translationLanguagesBySource?.[sourceLang] ?? TRANSLATION_DEFAULTS[sourceLang] ?? 'ru';
@@ -554,7 +554,7 @@ export default function ReadingPane({
         onTouchEnd={handleTouchEnd}
         onContextMenu={handleContextMenu}
       >
-        <h1 className="reading-pane-title">
+        <h1 className="reading-pane-title" dir={isRTL(sourceLang) ? 'rtl' : undefined}>
           {text.title.split(/(\s+)/).map((part, i) =>
             !part ? null : /^\s+$/.test(part) ? part : (
               <span key={i} className="reading-word">{part}</span>
@@ -563,6 +563,7 @@ export default function ReadingPane({
         </h1>
         <div
           className="reading-pane-text"
+          dir={isRTL(sourceLang) ? 'rtl' : undefined}
           style={{ '--reading-font-size': `${prefs.textSize}px`, '--reading-line-height': prefs.lineSpacing }}
         >
           {blocks.map((block, i) => renderBlock(block, i))}

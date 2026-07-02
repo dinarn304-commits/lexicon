@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Volume2 } from 'lucide-react';
 import { DEEPL_SUPPORTED } from '../utils/language';
@@ -159,19 +159,19 @@ export default function TranslationPanel({
         </button>
 
       <div className="translation-panel-header">
-        <h3 className="translation-panel-word">{word}</h3>
-        <div className="translation-lang-toggle">
-          {ALL_TARGET_LANGS.map((l, i) => (
-            <Fragment key={l}>
-              {i > 0 && <span className="translation-lang-divider">·</span>}
+        <h3 className="translation-panel-word" dir="auto">{word}</h3>
+        <div className="translation-lang-toggle-clip">
+          <div className="translation-lang-toggle">
+            {ALL_TARGET_LANGS.map((l) => (
               <button
+                key={l}
                 className={`translation-lang-btn${lang === l ? ' active' : ''}`}
                 onClick={() => onLangChange(l)}
               >
                 {l}
               </button>
-            </Fragment>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 

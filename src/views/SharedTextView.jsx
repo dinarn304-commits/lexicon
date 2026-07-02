@@ -5,14 +5,14 @@ import ReadingControl from '../components/ReadingControl';
 import TranslationPanel from '../components/TranslationPanel';
 import { makeCard } from '../utils/card';
 import { findSentence } from '../utils/sentence';
-import { translateSentence } from '../utils/language';
+import { translateSentence, isRTL } from '../utils/language';
 import { makeId } from '../utils/id';
 
 const MARGIN_OPTIONS = ['narrow', 'normal', 'wide'];
 const MARGIN_WIDTHS  = { narrow: '28rem', normal: '36rem', wide: '48rem' };
 const MOBILE_BODY_PADDING = { narrow: '0 24px', normal: '0 8px', wide: '0' };
 const SPACING_OPTIONS = [1.1, 1.3, 1.5, 1.7, 1.9];
-const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru', fr: 'ru', hi: 'ru' };
+const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru', fr: 'ru', hi: 'ru', ar: 'ru', fa: 'ru' };
 
 function countWordsInDoc(doc) {
   const parts = [];
@@ -606,7 +606,7 @@ export default function SharedTextView({
         onTouchEnd={handleTouchEnd}
         onContextMenu={handleContextMenu}
       >
-        <h1 className="reading-pane-title">
+        <h1 className="reading-pane-title" dir={isRTL(sourceLang) ? 'rtl' : undefined}>
           {shareData.title.split(/(\s+)/).map((part, i) =>
             !part ? null : /^\s+$/.test(part) ? part : (
               <span key={i} className="reading-word">{part}</span>
@@ -615,6 +615,7 @@ export default function SharedTextView({
         </h1>
         <div
           className="reading-pane-text"
+          dir={isRTL(sourceLang) ? 'rtl' : undefined}
           style={{ '--reading-font-size': `${prefs.textSize}px`, '--reading-line-height': prefs.lineSpacing }}
         >
           {blocks.map((block, i) => renderBlock(block, i))}
