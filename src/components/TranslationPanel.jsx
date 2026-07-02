@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Volume2 } from 'lucide-react';
 import { DEEPL_SUPPORTED } from '../utils/language';
+import { countWords } from '../utils/tokenize';
 
 const ALL_TARGET_LANGS = ['tr', 'en', 'es', 'fr', 'ru', 'de', 'ar', 'fa', 'hi', 'zh'];
 
@@ -45,7 +46,7 @@ export default function TranslationPanel({
   const onCloseRef = useRef(onClose);
   useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
-  const wordCount = word ? word.trim().split(/\s+/).filter(Boolean).length : 0;
+  const wordCount = word ? countWords(word.trim(), sourceLang) : 0;
   const isShortSelection = wordCount <= 2;
 
   // Routing is a pure function of the pair, so the engine that will answer is

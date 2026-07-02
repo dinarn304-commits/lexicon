@@ -6,51 +6,50 @@ import TranslationPanel from '../components/TranslationPanel';
 import { makeCard } from '../utils/card';
 import { findSentence } from '../utils/sentence';
 import { translateSentence, isRTL } from '../utils/language';
+import { segmentParagraph, countWords } from '../utils/tokenize';
 import { makeId } from '../utils/id';
 
 const MARGIN_OPTIONS = ['narrow', 'normal', 'wide'];
 const MARGIN_WIDTHS  = { narrow: '28rem', normal: '36rem', wide: '48rem' };
 const MOBILE_BODY_PADDING = { narrow: '0 24px', normal: '0 8px', wide: '0' };
 const SPACING_OPTIONS = [1.1, 1.3, 1.5, 1.7, 1.9];
-const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru', fr: 'ru', hi: 'ru', ar: 'ru', fa: 'ru' };
+const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru', fr: 'ru', hi: 'ru', ar: 'ru', fa: 'ru', zh: 'ru' };
 
-function countWordsInDoc(doc) {
+function countWordsInDoc(doc, sourceLang) {
   const parts = [];
   function walk(node) {
     if (node.type === 'text') parts.push(node.text || '');
     if (node.content) node.content.forEach(walk);
   }
   if (doc.content) doc.content.forEach(walk);
-  return parts.join(' ').trim().split(/\s+/).filter(Boolean).length;
+  return countWords(parts.join(' ').trim(), sourceLang);
 }
 
 // Replicated from ReadingPane — callback shapes differ (ReadingPane uses
 // onUpdateReadingProgress(id, newTotal) with per-text tracking; SharedTextView
 // uses onAddReadingProgress(delta) for global-only counters since the shared
 // text is not in data.texts). Extract if a third copy ever appears.
-function countBlockWords(node) {
+function countBlockWords(node, sourceLang) {
   const parts = [];
   function walk(n) {
     if (n.type === 'text') parts.push(n.text || '');
     if (n.content) n.content.forEach(walk);
   }
   walk(node);
-  const joined = parts.join(' ').trim();
-  return joined ? joined.split(/\s+/).filter(Boolean).length : 0;
+  return countWords(parts.join(' ').trim(), sourceLang);
 }
 
-function renderInline(nodes) {
+function renderInline(nodes, sourceLang) {
   if (!nodes?.length) return null;
   return nodes.map((node, i) => {
     if (node.type === 'text') {
-      const text = node.text || '';
-      const parts = text.split(/(\s+)/);
+      const tokens = segmentParagraph(node.text || '', sourceLang);
       return (
         <Fragment key={i}>
-          {parts.map((part, j) => {
-            if (!part) return null;
-            if (/^\s+$/.test(part)) return part;
-            let inner = <>{part}</>;
+          {tokens.map((tok, j) => {
+            if (!tok.text) return null;
+            if (!tok.isWord) return tok.text;
+            let inner = <>{tok.text}</>;
             for (const mark of node.marks || []) {
               if (mark.type === 'bold')           inner = <strong>{inner}</strong>;
               else if (mark.type === 'italic')    inner = <em>{inner}</em>;
@@ -87,6 +86,7 @@ export default function SharedTextView({
   const [shareData, setShareData] = useState(null);
   const [saved, setSaved] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const sourceLang = shareData?.sourceLanguage || 'tr';
 
   useEffect(() => {
     document.title = 'Lexicon · Loading…';
@@ -140,12 +140,12 @@ export default function SharedTextView({
 
   const cumulativeWords = useMemo(() => {
     let total = 0;
-    return blocks.map((b) => { total += countBlockWords(b); return total; });
-  }, [blocks]);
+    return blocks.map((b) => { total += countBlockWords(b, sourceLang); return total; });
+  }, [blocks, sourceLang]);
 
   useEffect(() => {
     if (!shareData) return;
-    const totalWords = countWordsInDoc(shareData.content);
+    const totalWords = countWordsInDoc(shareData.content, sourceLang);
     let ticking = false;
     function handleScroll() {
       if (ticking) return;
@@ -189,7 +189,6 @@ export default function SharedTextView({
   const [defineQuery, setDefineQuery] = useState(null);
   const [defineResult, setDefineResult] = useState({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
 
-  const sourceLang = shareData?.sourceLanguage || 'tr';
   const translationLang = data.translationLanguagesBySource?.[sourceLang] ?? TRANSLATION_DEFAULTS[sourceLang] ?? 'ru';
   const bodyRef = useRef(null);
   const handledByTouchRef = useRef(false);
@@ -197,7 +196,7 @@ export default function SharedTextView({
 
   useEffect(() => {
     if (!translationQuery) return;
-    if (translationQuery.trim().split(/\s+/).filter(Boolean).length > 2) return;
+    if (countWords(translationQuery.trim(), sourceLang) > 2) return;
     if (translationLang === sourceLang) return; // same-language pair: Glosbe is meaningless, don't fetch
     setTranslationResult({ translations: [], examples: [], loading: true });
     fetch(`/api/glosbe?word=${encodeURIComponent(translationQuery)}&lang=${translationLang}&sourceLang=${sourceLang}`)
@@ -275,7 +274,7 @@ export default function SharedTextView({
   }, [translationQuery, isMobile]);
 
   function handleQueryFound(query, paraText) {
-    const wordCount = query.split(/\s+/).filter(Boolean).length;
+    const wordCount = countWords(query, sourceLang);
     const contextSentence = findSentence(paraText, query);
 
     setTranslationQuery(query);
@@ -403,7 +402,7 @@ export default function SharedTextView({
       case 'paragraph':
         return (
           <p key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-para">
-            {renderInline(node.content)}
+            {renderInline(node.content, sourceLang)}
           </p>
         );
 
@@ -412,7 +411,7 @@ export default function SharedTextView({
         const Tag = `h${Math.min(level + 1, 6)}`;
         return (
           <Tag key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-heading">
-            {renderInline(node.content)}
+            {renderInline(node.content, sourceLang)}
           </Tag>
         );
       }
@@ -423,7 +422,7 @@ export default function SharedTextView({
             {(node.content || []).map((item, i) => (
               <li key={i}>
                 {(item.content || []).map((p, j) => (
-                  <Fragment key={j}>{renderInline(p.content)}</Fragment>
+                  <Fragment key={j}>{renderInline(p.content, sourceLang)}</Fragment>
                 ))}
               </li>
             ))}
@@ -436,7 +435,7 @@ export default function SharedTextView({
             {(node.content || []).map((item, i) => (
               <li key={i}>
                 {(item.content || []).map((p, j) => (
-                  <Fragment key={j}>{renderInline(p.content)}</Fragment>
+                  <Fragment key={j}>{renderInline(p.content, sourceLang)}</Fragment>
                 ))}
               </li>
             ))}
@@ -447,7 +446,7 @@ export default function SharedTextView({
         return (
           <blockquote key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-blockquote">
             {(node.content || []).map((p, i) => (
-              <p key={i} className="reading-para" style={{ margin: 0 }}>{renderInline(p.content)}</p>
+              <p key={i} className="reading-para" style={{ margin: 0 }}>{renderInline(p.content, sourceLang)}</p>
             ))}
           </blockquote>
         );
@@ -481,7 +480,7 @@ export default function SharedTextView({
         if (node.content) {
           return (
             <p key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-para">
-              {renderInline(node.content)}
+              {renderInline(node.content, sourceLang)}
             </p>
           );
         }
@@ -514,7 +513,7 @@ export default function SharedTextView({
       id: makeId(),
       title: shareData.title,
       content: doc,
-      wordCount: countWordsInDoc(doc),
+      wordCount: countWordsInDoc(doc, sourceLang),
       wordsReadInThisText: 0,
       sourceLanguage: shareData.sourceLanguage,
       createdAt: now,
@@ -606,16 +605,21 @@ export default function SharedTextView({
         onTouchEnd={handleTouchEnd}
         onContextMenu={handleContextMenu}
       >
-        <h1 className="reading-pane-title" dir={isRTL(sourceLang) ? 'rtl' : undefined}>
-          {shareData.title.split(/(\s+)/).map((part, i) =>
-            !part ? null : /^\s+$/.test(part) ? part : (
-              <span key={i} className="reading-word">{part}</span>
+        <h1
+          className="reading-pane-title"
+          dir={isRTL(sourceLang) ? 'rtl' : undefined}
+          data-lang={sourceLang === 'zh' ? 'zh' : undefined}
+        >
+          {segmentParagraph(shareData.title, sourceLang).map((tok, i) =>
+            !tok.text ? null : !tok.isWord ? tok.text : (
+              <span key={i} className="reading-word">{tok.text}</span>
             )
           )}
         </h1>
         <div
           className="reading-pane-text"
           dir={isRTL(sourceLang) ? 'rtl' : undefined}
+          data-lang={sourceLang === 'zh' ? 'zh' : undefined}
           style={{ '--reading-font-size': `${prefs.textSize}px`, '--reading-line-height': prefs.lineSpacing }}
         >
           {blocks.map((block, i) => renderBlock(block, i))}

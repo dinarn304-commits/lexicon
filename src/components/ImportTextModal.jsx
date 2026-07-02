@@ -8,6 +8,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { makeId } from '../utils/id';
 import { processImageFile } from '../storage/images';
 import { SOURCE_LANGUAGES } from '../utils/language';
+import { countWords } from '../utils/tokenize';
 
 const textImageKey = (id) => `srs-text-image-${id}`;
 
@@ -36,14 +37,14 @@ const ImageWithResolver = Image.extend({
   },
 });
 
-function countWordsInTipTapDoc(doc) {
+function countWordsInTipTapDoc(doc, sourceLang) {
   const texts = [];
   function walk(node) {
     if (node.type === 'text') texts.push(node.text || '');
     if (node.content) node.content.forEach(walk);
   }
   if (doc.content) doc.content.forEach(walk);
-  return texts.join(' ').trim().split(/\s+/).filter(Boolean).length;
+  return countWords(texts.join(' ').trim(), sourceLang);
 }
 
 export default function ImportTextModal({ onClose, onSave, defaultLang = 'tr' }) {
@@ -188,7 +189,7 @@ export default function ImportTextModal({ onClose, onSave, defaultLang = 'tr' })
     if (!valid || !editor) return;
 
     const doc = editor.getJSON();
-    const wordCount = countWordsInTipTapDoc(doc);
+    const wordCount = countWordsInTipTapDoc(doc, sourceLang);
     const now = new Date().toISOString();
     onSave({
       id: makeId(),

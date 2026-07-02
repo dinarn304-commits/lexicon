@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   const { word, lang, sourceLang = 'tr' } = req.query;
 
   const VALID_TARGET_LANGS = ['tr', 'en', 'es', 'fr', 'ru', 'de', 'ar', 'fa', 'hi', 'zh'];
-  const VALID_SOURCE_LANGS = ['tr', 'en', 'es', 'fr', 'hi', 'ar', 'fa'];
+  const VALID_SOURCE_LANGS = ['tr', 'en', 'es', 'fr', 'hi', 'ar', 'fa', 'zh'];
 
   if (!word || !lang) {
     return res.status(400).json({ error: 'Missing required parameters: word and lang' });

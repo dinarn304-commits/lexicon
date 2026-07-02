@@ -55,6 +55,14 @@ export const SOURCE_LANGUAGES = [
     deckName: 'واژه‌های کشف‌شده هنگام خواندن',
     deckLanguageLabel: 'Persian',
   },
+  {
+    code: 'zh',
+    nativeName: '中文',
+    englishName: 'Chinese',
+    deckId: 'deck-discovered-words-zh',
+    deckName: '阅读时发现的词语',
+    deckLanguageLabel: 'Chinese',
+  },
 ];
 
 export function getLanguageMeta(code) {

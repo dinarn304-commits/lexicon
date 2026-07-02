@@ -150,6 +150,73 @@ GPT — automatically, through the shared `translateSentence()`.
 
 ---
 
+## 3bis. Round three — Chinese, and the end of the whitespace assumption
+
+This round (part of the same commit series, `reading: Chinese source with
+Intl.Segmenter word segmentation and Noto Serif SC`) added **Chinese (`zh`)** as
+the eighth source language. Chinese is the first source language written *without
+spaces between words*, which quietly broke three assumptions the reading section
+had relied on since day one: how paragraphs are split into clickable word spans,
+how words are counted, and how a selection is routed between the GPT
+single-word/short-phrase path and the DeepL 3+-word path.
+
+### The shared tokenizer, `src/utils/tokenize.js`
+
+Rather than sprinkle `sourceLang === 'zh'` checks across two reading views, a panel,
+and an import modal, all word segmentation now lives in one module:
+
+- **`segmentParagraph(text, sourceLang)`** returns ordered `{ text, isWord }`
+  tokens. For every non-CJK language it reproduces the historical
+  `split(/(\s+)/)` behaviour **exactly** — this was a refactor for them, not a
+  change, and it was verified byte-for-byte. For `zh` it uses
+  `Intl.Segmenter('zh', { granularity: 'word' })`; word-like segments become
+  clickable spans, punctuation and any stray whitespace become inert text.
+- **`countWords(text, sourceLang)`** is the counting counterpart: the old
+  `split(/\s+/)` for non-CJK, the count of word-like segments for `zh`.
+
+The `Intl.Segmenter` is built into every modern browser (no library), and we
+instantiate it **once, lazily** — segmenting per paragraph with a fresh Segmenter
+would be wasteful. There is a guard: if `Intl.Segmenter` is absent (a very old
+browser), `zh` falls back to character-level tokens, so clicking still works at
+the character level and nothing crashes.
+
+A note on segmentation quality: the browser's ICU dictionary decides where word
+boundaries fall (e.g. clicking inside 图书馆 selects the whole word, not one
+character). This is the runtime's job, not ours; browser ICU is good, and it is
+what both localhost and production use.
+
+### The three counting sites that moved
+
+Every whitespace count now flows through `countWords(text, sourceLang)`: the
+import modal's word count (it knows the selected source-language pill), the
+reading progress tracking (`countBlockWords` / `countWordsInDoc` in both views),
+and — crucially — the **1–2-vs-3+ routing** in `handleQueryFound` in both views
+*and* the independent `isShortSelection` check inside `TranslationPanel`. If the
+panel's count disagreed with the view's, a Chinese sentence (one whitespace chunk)
+would be mislabelled "short" and shown the wrong layout; both now segment.
+
+### Punctuation and typeface
+
+`findSentence()` gained the CJK terminators `。` (U+3002), `！` (U+FF01), `？`
+(U+FF1F). The CJK commas `、` and `，` are **not** sentence boundaries and are
+deliberately excluded.
+
+Chinese reads in **Noto Serif SC** (weights 400/700), loaded through the same
+Google Fonts `@import` as Fraunces, DM Mono, and Amiri. It is applied to the
+reading title and body of `zh` texts via a conditional `data-lang="zh"` attribute
+(mirroring how Amiri keys off a conditional `dir="rtl"` — set only on the relevant
+texts, so every other language is byte-identical), and it is appended to the
+panel's result-text stacks *immediately after* Amiri
+(`'Fraunces', 'Amiri', 'Noto Serif SC', serif`). Per-glyph fallback keeps Latin in
+Fraunces and Arabic script in Amiri; only Han glyphs reach Noto Serif SC — so a
+Chinese *target* translation renders properly for a reader of any source language.
+No line-height override — the script's natural metrics are honoured, per the
+standing rule. `DEEPL_SUPPORTED` already contained `zh`, so Chinese sentence pairs
+route to DeepL with no routing change; `api/glosbe.js` gained `zh` as a valid
+source (it was already a valid target).
+
+---
+
 ## 4. What is deliberately left for a future round
 
 - **No RTL work on the app chrome, panel, or controls.** Only the reading title

@@ -7,6 +7,7 @@ import ShareModal from '../components/ShareModal';
 import { makeCard } from '../utils/card';
 import { findSentence } from '../utils/sentence';
 import { translateSentence, isRTL } from '../utils/language';
+import { segmentParagraph, countWords } from '../utils/tokenize';
 import NotFoundView from './NotFoundView';
 
 const MARGIN_OPTIONS = ['narrow', 'normal', 'wide'];
@@ -18,18 +19,17 @@ const SPACING_OPTIONS = [1.1, 1.3, 1.5, 1.7, 1.9];
 
 const textImageKey = (id) => `srs-text-image-${id}`;
 
-function renderInline(nodes) {
+function renderInline(nodes, sourceLang) {
   if (!nodes?.length) return null;
   return nodes.map((node, i) => {
     if (node.type === 'text') {
-      const text = node.text || '';
-      const parts = text.split(/(\s+)/);
+      const tokens = segmentParagraph(node.text || '', sourceLang);
       return (
         <Fragment key={i}>
-          {parts.map((part, j) => {
-            if (!part) return null;
-            if (/^\s+$/.test(part)) return part;
-            let inner = <>{part}</>;
+          {tokens.map((tok, j) => {
+            if (!tok.text) return null;
+            if (!tok.isWord) return tok.text;
+            let inner = <>{tok.text}</>;
             for (const mark of node.marks || []) {
               if (mark.type === 'bold')           inner = <strong>{inner}</strong>;
               else if (mark.type === 'italic')    inner = <em>{inner}</em>;
@@ -47,15 +47,14 @@ function renderInline(nodes) {
   });
 }
 
-function countBlockWords(node) {
+function countBlockWords(node, sourceLang) {
   const parts = [];
   function walk(n) {
     if (n.type === 'text') parts.push(n.text || '');
     if (n.content) n.content.forEach(walk);
   }
   walk(node);
-  const joined = parts.join(' ').trim();
-  return joined ? joined.split(/\s+/).filter(Boolean).length : 0;
+  return countWords(parts.join(' ').trim(), sourceLang);
 }
 
 export default function ReadingPane({
@@ -67,6 +66,7 @@ export default function ReadingPane({
 }) {
   const { textSlug } = useParams();
   const text = data.texts?.find((t) => t.slug === textSlug);
+  const sourceLang = text?.sourceLanguage || 'tr';
   const prefs = data.readingPreferences || { textSize: 18, marginWidth: 'normal', lineSpacing: 1.5 };
 
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 900px)').matches);
@@ -101,7 +101,7 @@ export default function ReadingPane({
 
   const cumulativeWords = useMemo(() => {
     let total = 0;
-    return blocks.map((b) => { total += countBlockWords(b); return total; });
+    return blocks.map((b) => { total += countBlockWords(b, sourceLang); return total; });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text?.id]);
 
@@ -201,9 +201,8 @@ export default function ReadingPane({
   const [defineQuery, setDefineQuery] = useState(null);
   const [defineResult, setDefineResult] = useState({ base: null, isInflected: false, meaningBase: null, noteTarget: null, noteSource: null, loading: false, error: null });
 
-  const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru', fr: 'ru', hi: 'ru', ar: 'ru', fa: 'ru' };
+  const TRANSLATION_DEFAULTS = { tr: 'ru', en: 'ru', es: 'ru', fr: 'ru', hi: 'ru', ar: 'ru', fa: 'ru', zh: 'ru' };
 
-  const sourceLang = text?.sourceLanguage || 'tr';
   const translationLang = data.translationLanguagesBySource?.[sourceLang] ?? TRANSLATION_DEFAULTS[sourceLang] ?? 'ru';
   const bodyRef = useRef(null);
   const handledByTouchRef = useRef(false);
@@ -211,7 +210,7 @@ export default function ReadingPane({
 
   useEffect(() => {
     if (!translationQuery) return;
-    if (translationQuery.trim().split(/\s+/).filter(Boolean).length > 2) return;
+    if (countWords(translationQuery.trim(), sourceLang) > 2) return;
     if (translationLang === sourceLang) return; // same-language pair: Glosbe is meaningless, don't fetch
     setTranslationResult({ translations: [], examples: [], loading: true });
     fetch(`/api/glosbe?word=${encodeURIComponent(translationQuery)}&lang=${translationLang}&sourceLang=${sourceLang}`)
@@ -290,7 +289,7 @@ export default function ReadingPane({
   }, [translationQuery, isMobile]);
 
   function handleQueryFound(query, paraText) {
-    const wordCount = query.split(/\s+/).filter(Boolean).length;
+    const wordCount = countWords(query, sourceLang);
     const contextSentence = findSentence(paraText, query);
 
     setTranslationQuery(query);
@@ -410,7 +409,7 @@ export default function ReadingPane({
       case 'paragraph':
         return (
           <p key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-para">
-            {renderInline(node.content)}
+            {renderInline(node.content, sourceLang)}
           </p>
         );
 
@@ -419,7 +418,7 @@ export default function ReadingPane({
         const Tag = `h${Math.min(level + 1, 6)}`;
         return (
           <Tag key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-heading">
-            {renderInline(node.content)}
+            {renderInline(node.content, sourceLang)}
           </Tag>
         );
       }
@@ -430,7 +429,7 @@ export default function ReadingPane({
             {(node.content || []).map((item, i) => (
               <li key={i}>
                 {(item.content || []).map((p, j) => (
-                  <Fragment key={j}>{renderInline(p.content)}</Fragment>
+                  <Fragment key={j}>{renderInline(p.content, sourceLang)}</Fragment>
                 ))}
               </li>
             ))}
@@ -443,7 +442,7 @@ export default function ReadingPane({
             {(node.content || []).map((item, i) => (
               <li key={i}>
                 {(item.content || []).map((p, j) => (
-                  <Fragment key={j}>{renderInline(p.content)}</Fragment>
+                  <Fragment key={j}>{renderInline(p.content, sourceLang)}</Fragment>
                 ))}
               </li>
             ))}
@@ -454,7 +453,7 @@ export default function ReadingPane({
         return (
           <blockquote key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-blockquote">
             {(node.content || []).map((p, i) => (
-              <p key={i} className="reading-para" style={{ margin: 0 }}>{renderInline(p.content)}</p>
+              <p key={i} className="reading-para" style={{ margin: 0 }}>{renderInline(p.content, sourceLang)}</p>
             ))}
           </blockquote>
         );
@@ -490,7 +489,7 @@ export default function ReadingPane({
         if (node.content) {
           return (
             <p key={index} ref={blockRef(index)} data-paragraph-index={index} className="reading-para">
-              {renderInline(node.content)}
+              {renderInline(node.content, sourceLang)}
             </p>
           );
         }
@@ -554,16 +553,21 @@ export default function ReadingPane({
         onTouchEnd={handleTouchEnd}
         onContextMenu={handleContextMenu}
       >
-        <h1 className="reading-pane-title" dir={isRTL(sourceLang) ? 'rtl' : undefined}>
-          {text.title.split(/(\s+)/).map((part, i) =>
-            !part ? null : /^\s+$/.test(part) ? part : (
-              <span key={i} className="reading-word">{part}</span>
+        <h1
+          className="reading-pane-title"
+          dir={isRTL(sourceLang) ? 'rtl' : undefined}
+          data-lang={sourceLang === 'zh' ? 'zh' : undefined}
+        >
+          {segmentParagraph(text.title, sourceLang).map((tok, i) =>
+            !tok.text ? null : !tok.isWord ? tok.text : (
+              <span key={i} className="reading-word">{tok.text}</span>
             )
           )}
         </h1>
         <div
           className="reading-pane-text"
           dir={isRTL(sourceLang) ? 'rtl' : undefined}
+          data-lang={sourceLang === 'zh' ? 'zh' : undefined}
           style={{ '--reading-font-size': `${prefs.textSize}px`, '--reading-line-height': prefs.lineSpacing }}
         >
           {blocks.map((block, i) => renderBlock(block, i))}

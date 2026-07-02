@@ -1,7 +1,7 @@
 export default function ThemeStyles() {
   return (
     <style>{`
-      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=DM+Mono:wght@400;500&family=Amiri:wght@400;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=DM+Mono:wght@400;500&family=Amiri:wght@400;700&family=Noto+Serif+SC:wght@400;700&display=swap');
 
       /* Vollkorn covers Cyrillic range under the Fraunces family name so
          Latin text uses Fraunces and Cyrillic text uses Vollkorn's
@@ -1050,6 +1050,21 @@ export default function ThemeStyles() {
       .reading-pane-text[dir="rtl"] .reading-blockquote {
         font-family: 'Amiri', 'Fraunces', serif;
       }
+
+      /* Han serif for Chinese source texts. Noto Serif SC leads so the script
+         renders in its intended face; embedded Latin/numbers fall through to
+         Fraunces per-glyph. The data-lang="zh" hook is set only on zh texts, so
+         every other language is untouched. No line-height override — the script's
+         natural metrics are honoured (standing rule). */
+      .reading-pane-title[data-lang="zh"] {
+        font-family: 'Noto Serif SC', 'Fraunces', serif;
+      }
+      .reading-pane-text[data-lang="zh"] .reading-para,
+      .reading-pane-text[data-lang="zh"] .reading-heading,
+      .reading-pane-text[data-lang="zh"] .reading-list,
+      .reading-pane-text[data-lang="zh"] .reading-blockquote {
+        font-family: 'Noto Serif SC', 'Fraunces', serif;
+      }
       .reading-code {
         font-family: 'DM Mono', ui-monospace, monospace;
         font-size: 13px;
@@ -1141,7 +1156,7 @@ export default function ThemeStyles() {
         padding: 0.75rem 1.25rem 1.1rem;
       }
       .translation-panel-word {
-        font-family: 'Fraunces', 'Amiri', serif;
+        font-family: 'Fraunces', 'Amiri', 'Noto Serif SC', serif;
         font-size: 1.25rem;
         font-weight: 500;
         color: var(--ink);
@@ -1222,7 +1237,7 @@ export default function ThemeStyles() {
         padding: 0;
       }
       .translation-item {
-        font-family: 'Fraunces', 'Amiri', serif;
+        font-family: 'Fraunces', 'Amiri', 'Noto Serif SC', serif;
         font-size: 1rem;
         color: var(--ink);
         line-height: 1.55;
@@ -1333,7 +1348,7 @@ export default function ThemeStyles() {
         line-height: 1.5;
       }
       .deepl-translation {
-        font-family: 'Fraunces', 'Amiri', Georgia, serif;
+        font-family: 'Fraunces', 'Amiri', 'Noto Serif SC', Georgia, serif;
         font-size: 0.95rem;
         color: var(--ink);
         margin: 0;
@@ -1497,13 +1512,13 @@ export default function ThemeStyles() {
         color: var(--ink-faint);
       }
       .define-base {
-        font-family: 'Fraunces', 'Amiri', Georgia, serif;
+        font-family: 'Fraunces', 'Amiri', 'Noto Serif SC', Georgia, serif;
         font-size: 0.95rem;
         color: var(--terracotta);
         font-weight: 500;
       }
       .define-meaning {
-        font-family: 'Fraunces', 'Amiri', Georgia, serif;
+        font-family: 'Fraunces', 'Amiri', 'Noto Serif SC', Georgia, serif;
         font-size: 1rem;
         color: var(--ink);
         margin: 0 0 0.3rem;
